@@ -12,10 +12,21 @@ public class GraphCreationScript : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
+        //CreateGraphAndLines();
+    }
+
+    // Update is called once per frame
+    void Update()
+    {
+        
+    }
+
+    public void CreateGraphAndLines()
+    {
         LineDrawer ld = new LineDrawer();
 
         int ballCount = 50;
-        Vector3 previousV = new Vector3(1,1,1); //init vector
+        Vector3 previousV = new Vector3(1, 1, 1); //init vector
 
         for (var i = 0; i < ballCount; i++)
         {
@@ -26,7 +37,7 @@ public class GraphCreationScript : MonoBehaviour
             dataPoint.GetComponentInChildren<Renderer>().material.color = new Color(0, 0, 1, 1.0f);
 
             //Lines Drawing 
-            if(i != 0)
+            if (i != 0)
             {
                 List<Vector3> pointlist = new List<Vector3>();
                 pointlist.Add(previousV);
@@ -38,12 +49,5 @@ public class GraphCreationScript : MonoBehaviour
             previousV = new Vector3(Mathf.Cos(angle) * (ballCount / 5), 2, Mathf.Sin(angle) * (ballCount / 5));
 
         }
-
-    }
-
-    // Update is called once per frame
-    void Update()
-    {
-        
     }
 }

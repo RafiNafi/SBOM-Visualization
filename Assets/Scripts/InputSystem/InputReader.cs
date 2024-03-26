@@ -5,16 +5,25 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
+using System.Runtime.InteropServices.ComTypes;
+using TMPro;
+using Unity.VisualScripting;
 using UnityEngine;
 using static UnityEngine.Rendering.DebugUI;
 
 
 public class InputReader : MonoBehaviour
 {
+    public GameObject BallPrefab;
+    List<DataObject> dataObjects = new List<DataObject>();
+    Dictionary<int, int> level_occurrences = new Dictionary<int, int>();
+
     // Start is called before the first frame update
     void Start()
     {
-        readFile();
+        ReadFileAndCreateObjects();
+        PositionDataBalls();
     }
 
     // Update is called once per frame
@@ -23,44 +32,160 @@ public class InputReader : MonoBehaviour
         
     }
 
-    public void readFile()
+    public void ReadFileAndCreateObjects()
     {
-        string jsonTest = "{\r\n  \"SPDXID\": \"SPDXRef-DOCUMENT\",\r\n  \"spdxVersion\": \"SPDX-2.3\",\r\n  \"creationInfo\": {\r\n    \"created\": \"2023-08-30T04:40:16Z\",\r\n    \"creators\": [\r\n      \"Organization: Uchiha Cortez\",\r\n      \"Tool: FOSSA v0.12.0\"\r\n    ],\r\n    \"licenseListVersion\": \"3.18\",\r\n    \"documentDescribes\": [\r\n      \"SPDXRef-npm-codemirror-6.0.1\",\r\n      \"SPDXRef-npm-core-js-3.6.5\",\r\n      \"SPDXRef-npm-electron-11.1.1\",\r\n      \"SPDXRef-npm-fractional-1.0.0\",\r\n      \"SPDXRef-npm-regenerator-runtime-0.13.7\",\r\n      \"SPDXRef-npm-boolean-3.2.0\",\r\n      \"SPDXRef-npm-buffer-crc32-0.2.13\",\r\n      \"SPDXRef-npm-buffer-from-1.1.1\",\r\n      \"SPDXRef-npm-cacheable-request-6.1.0\",\r\n      \"SPDXRef-npm-clone-response-1.0.3\",\r\n      \"SPDXRef-npm-codemirror-autocomplete-6.9.0\",\r\n      \"SPDXRef-npm-codemirror-commands-6.2.5\",\r\n      \"SPDXRef-npm-codemirror-language-6.9.0\",\r\n      \"SPDXRef-npm-codemirror-lint-6.4.1\",\r\n      \"SPDXRef-npm-codemirror-search-6.5.2\",\r\n      \"SPDXRef-npm-codemirror-state-6.2.1\",\r\n      \"SPDXRef-npm-codemirror-view-6.17.0\",\r\n      \"SPDXRef-npm-concat-stream-1.6.2\",\r\n      \"SPDXRef-npm-config-chain-1.1.13\",\r\n      \"SPDXRef-npm-core-util-is-1.0.2\",\r\n      \"SPDXRef-npm-crelt-1.0.6\",\r\n      \"SPDXRef-npm-debug-2.6.9\",\r\n      \"SPDXRef-npm-debug-4.1.1\",\r\n      \"SPDXRef-npm-decompress-response-3.3.0\",\r\n      \"SPDXRef-npm-defer-to-connect-1.1.3\",\r\n      \"SPDXRef-npm-define-properties-1.1.3\",\r\n      \"SPDXRef-npm-detect-node-2.1.0\",\r\n      \"SPDXRef-npm-duplexer3-0.1.5\",\r\n      \"SPDXRef-npm-electron-get-1.14.1\",\r\n      \"SPDXRef-npm-encodeurl-1.0.2\",\r\n      \"SPDXRef-npm-end-of-stream-1.4.4\",\r\n      \"SPDXRef-npm-env-paths-2.2.1\",\r\n      \"SPDXRef-npm-es6-error-4.1.1\",\r\n      \"SPDXRef-npm-escape-string-regexp-4.0.0\",\r\n      \"SPDXRef-npm-extract-zip-1.7.0\",\r\n      \"SPDXRef-npm-fd-slicer-1.1.0\",\r\n      \"SPDXRef-npm-fs-extra-8.1.0\",\r\n      \"SPDXRef-npm-get-stream-4.1.0\",\r\n      \"SPDXRef-npm-get-stream-5.2.0\",\r\n      \"SPDXRef-npm-global-agent-3.0.0\",\r\n      \"SPDXRef-npm-globalthis-1.0.3\",\r\n      \"SPDXRef-npm-global-tunnel-ng-2.7.1\",\r\n      \"SPDXRef-npm-got-9.6.0\",\r\n      \"SPDXRef-npm-graceful-fs-4.2.4\",\r\n      \"SPDXRef-npm-http-cache-semantics-4.1.1\",\r\n      \"SPDXRef-npm-inherits-2.0.4\",\r\n      \"SPDXRef-npm-ini-1.3.8\",\r\n      \"SPDXRef-npm-isarray-1.0.0\",\r\n      \"SPDXRef-npm-json-buffer-3.0.0\",\r\n      \"SPDXRef-npm-jsonfile-4.0.0\",\r\n      \"SPDXRef-npm-json-stringify-safe-5.0.1\",\r\n      \"SPDXRef-npm-keyv-3.1.0\",\r\n      \"SPDXRef-npm-lezer-common-1.0.4\",\r\n      \"SPDXRef-npm-lezer-highlight-1.1.6\",\r\n      \"SPDXRef-npm-lezer-lr-1.3.10\",\r\n      \"SPDXRef-npm-lodash-4.17.20\",\r\n      \"SPDXRef-npm-lowercase-keys-1.0.1\",\r\n      \"SPDXRef-npm-lowercase-keys-2.0.0\",\r\n      \"SPDXRef-npm-lru-cache-6.0.0\",\r\n      \"SPDXRef-npm-matcher-3.0.0\",\r\n      \"SPDXRef-npm-mimic-response-1.0.1\",\r\n      \"SPDXRef-npm-minimist-1.2.5\",\r\n      \"SPDXRef-npm-mkdirp-0.5.5\",\r\n      \"SPDXRef-npm-ms-2.0.0\",\r\n      \"SPDXRef-npm-ms-2.1.2\",\r\n      \"SPDXRef-npm-normalize-url-4.5.1\",\r\n      \"SPDXRef-npm-npm-conf-1.1.3\",\r\n      \"SPDXRef-npm-object-keys-1.1.1\",\r\n      \"SPDXRef-npm-once-1.4.0\",\r\n      \"SPDXRef-npm-p-cancelable-1.1.0\",\r\n      \"SPDXRef-npm-pend-1.2.0\",\r\n      \"SPDXRef-npm-pify-3.0.0\",\r\n      \"SPDXRef-npm-prepend-http-2.0.0\",\r\n      \"SPDXRef-npm-process-nextick-args-2.0.1\",\r\n      \"SPDXRef-npm-progress-2.0.3\",\r\n      \"SPDXRef-npm-proto-list-1.2.4\",\r\n      \"SPDXRef-npm-pump-3.0.0\",\r\n      \"SPDXRef-npm-readable-stream-2.3.8\",\r\n      \"SPDXRef-npm-responselike-1.0.2\",\r\n      \"SPDXRef-npm-roarr-2.15.4\",\r\n      \"SPDXRef-npm-safe-buffer-5.1.2\",\r\n      \"SPDXRef-npm-semver-6.3.1\",\r\n      \"SPDXRef-npm-semver-7.5.4\",\r\n      \"SPDXRef-npm-semver-compare-1.0.0\",\r\n      \"SPDXRef-npm-serialize-error-7.0.1\",\r\n      \"SPDXRef-npm-sindresorhus-is-0.14.0\",\r\n      \"SPDXRef-npm-sprintf-js-1.1.2\",\r\n      \"SPDXRef-npm-string-decoder-1.1.1\",\r\n      \"SPDXRef-npm-style-mod-4.1.0\",\r\n      \"SPDXRef-npm-sumchecker-3.0.1\",\r\n      \"SPDXRef-npm-szmarczak-http-timer-1.1.2\",\r\n      \"SPDXRef-npm-to-readable-stream-1.0.0\",\r\n      \"SPDXRef-npm-tunnel-0.0.6\",\r\n      \"SPDXRef-npm-typedarray-0.0.6\",\r\n      \"SPDXRef-npm-type-fest-0.13.1\",\r\n      \"SPDXRef-npm-types-node-12.20.55\",\r\n      \"SPDXRef-npm-universalify-0.1.2\",\r\n      \"SPDXRef-npm-url-parse-lax-3.0.0\",\r\n      \"SPDXRef-npm-util-deprecate-1.0.2\",\r\n      \"SPDXRef-npm-w3c-keyname-2.2.8\",\r\n      \"SPDXRef-npm-wrappy-1.0.2\",\r\n      \"SPDXRef-npm-yallist-4.0.0\",\r\n      \"SPDXRef-npm-yauzl-2.10.0\"\r\n    ]\r\n  }}";
+        string jsonTest = "{\r\n  \"name\": \"32098/github.com/CortezFrazierJr/my_recipe_book-418bed3e334f2c1b2d4de973e069037dc2faf60e\",\r\n  \"documentNamespace\": \"https://s3.us-east-1.amazonaws.com/blob.fossa.io/FOSSA_BOMS/custom%2B32098%2Fgithub.com%2FCortezFrazierJr%2Fmy_recipe_book%24418bed3e334f2c1b2d4de973e069037dc2faf60e\",\r\n  \"dataLicense\": \"CC0-1.0\",\r\n  \"packages\": [\r\n    {\r\n      \"SPDXID\": \"SPDXRef-custom-32098-github.com-CortezFrazierJr-my-recipe-book-418bed3e334f2c1b2d4de973e069037dc2faf60e\",\r\n      \"name\": \"https://github.com/CortezFrazierJr/my_recipe_book.git\",\r\n      \"versionInfo\": \"418bed3e334f2c1b2d4de973e069037dc2faf60e\",\r\n      \"filesAnalyzed\": true,\r\n      \"downloadLocation\": \"NOASSERTION\",\r\n      \"originator\": \"Organization: Custom (provided build)\",\r\n      \"supplier\": \"Organization: Uchiha Cortez\",\r\n      \"packageFileName\": \"custom+32098/github.com/CortezFrazierJr/my_recipe_book$418bed3e334f2c1b2d4de973e069037dc2faf60e\",\r\n      \"summary\": \"Project uploaded via Provided Builds from fossa-cli\",\r\n      \"licenseDeclared\": \"LicenseRef-ISC-26342263\",\r\n      \"copyrightText\": \"NONE\",\r\n      \"homepage\": \"NOASSERTION\",\r\n      \"licenseConcluded\": \"NOASSERTION\",\r\n      \"checksums\": [\r\n        {\r\n          \"algorithm\": \"MD5\",\r\n          \"checksumValue\": \"10cab2cd0690ffb91baeba0b42a3453b\"\r\n        },\r\n        {\r\n          \"algorithm\": \"SHA1\",\r\n          \"checksumValue\": \"c147bad1f95516ab7bee6ba2023020d7123c2fac\"\r\n        },\r\n        {\r\n          \"algorithm\": \"SHA256\",\r\n          \"checksumValue\": \"ee1300ac533cebc2d070ce3765685d5f7fca2a5a78ca15068323f68ed63d4abf\"\r\n        }\r\n      ],\r\n      \"externalRefs\": []\r\n    }]}";
 
         dynamic jsonObj = JObject.Parse(jsonTest);
 
-        var dict1 = JsonConvert.DeserializeObject<Dictionary<string, JToken>>(jsonTest);
+        var dict = JsonConvert.DeserializeObject<Dictionary<string, JToken>>(jsonTest);
+
+        //Main Root Point
+        Debug.Log("ERSTELLUNG START");
+        DataObject main_root = CreateDataObjectWithBall(0, "ROOT", "", null);
+        ProcessLevelOccurence(0);
+        dataObjects.Add(main_root);
+
+        RecursiveRead(dict,"ROOT", main_root);
+
+    }
+
+    public DataObject CreateDataObjectWithBall(int level, string key, string value, DataObject parent)
+    {
+        GameObject dataPoint = Instantiate(BallPrefab, new Vector3(1, 1, 1), Quaternion.identity);
+        TextMeshPro text = dataPoint.GetComponentInChildren<TextMeshPro>();
+        text.text = key+":"+value;
+        dataPoint.GetComponentInChildren<Renderer>().material.color = new Color(0, 0, 1, 1.0f);
+
+        if(parent != null)
+        {
+            ProcessLevelOccurence(parent.level + 1);
+            //Debug.Log(parent.level + 1);
+        }
+
+        return new DataObject(dataPoint,level,key,value,parent);
+    }
+
+    //Creates DataObjects and corresponding 3D Balls recursively through JSON 
+    public void RecursiveRead(Dictionary<string, JToken> dict1, string prev, DataObject parent)
+    {
+        
         foreach (var kv in dict1)
         {
-            Debug.Log(kv.Key + ":" + kv.Value);
 
-            if(kv.Value.ToString().Contains("{") && kv.Value.ToString().Contains("}"))
+            if (kv.Value.ToString().Contains("{") && kv.Value.ToString().Contains("}"))
             {
-                var dict2 = JsonConvert.DeserializeObject<Dictionary<string, JToken>>(kv.Value.ToString());
+                string Value = kv.Value.ToString();
 
-                foreach (var kv2 in dict2)
+                if (kv.Value.ToString()[0] is '[' && kv.Value.ToString()[kv.Value.ToString().Length - 1] is ']')
                 {
-                    Debug.Log(kv2.Key + ":" + kv2.Value);
+                    int counter = 0;
+                    Debug.Log(prev + "-[REL]->" + kv.Key);
 
-                    if (kv2.Value.ToString().Contains("[") && kv2.Value.ToString().Contains("]"))
+                    DataObject new_parent = CreateDataObjectWithBall(parent.level + 1,kv.Key,"",parent);
+                    dataObjects.Add(new_parent);
+
+                    //Sub Points
+                    foreach (var sub in kv.Value.Children().ToList())
                     {
-                        JArray arr = JArray.Parse(kv2.Value.ToString());
+                        counter++;
 
-                        foreach (var kv3 in arr)
-                        {
-                            Debug.Log(kv3);
-                        }
+                        string sub_node = kv.Key.ToString().Substring(0, kv.Key.Length - 1);
+                        Debug.Log(kv.Key + "-[REL]->" + sub_node + counter);
+
+                        DataObject new_sub_parent = CreateDataObjectWithBall(new_parent.level + 1, sub_node + counter, "", new_parent);
+                        dataObjects.Add(new_sub_parent);
+
+                        var dictSub = JsonConvert.DeserializeObject<Dictionary<string, JToken>>(sub.ToString());
+                        RecursiveRead(dictSub, sub_node + counter, new_sub_parent);
                     }
                 }
+                else
+                {
+                    //Sub Point
+                    Debug.Log(prev + "-[REL]->" + kv.Key);
 
+                    DataObject new_parent = CreateDataObjectWithBall(parent.level + 1, kv.Key, "", parent);
+                    dataObjects.Add(new_parent);
+
+                    var dict2 = JsonConvert.DeserializeObject<Dictionary<string, JToken>>(Value);
+                    RecursiveRead(dict2, kv.Key, new_parent);
+                }
+
+            }
+            else if (kv.Value.ToString().Contains("[") && kv.Value.ToString().Contains("]"))
+            {
+                //End Point
+                Debug.Log(prev + "-[REL]->" + kv.Key);
+
+                DataObject new_parent = CreateDataObjectWithBall(parent.level + 1, kv.Key, "", parent);
+                dataObjects.Add(new_parent);
+
+                JArray arr = JArray.Parse(kv.Value.ToString());
+
+                foreach (var arr_val in arr)
+                {
+                    Debug.Log(kv.Key+ "-[REL]->" + arr_val);
+
+                    DataObject new_end_point = CreateDataObjectWithBall(parent.level + 1, arr_val.ToString(), "", parent);
+                    dataObjects.Add(new_end_point);
+                }
+            }
+            else
+            {
+                //End Point
+                Debug.Log(prev + "-[REL]->" + kv.Key + ":" + kv.Value);
+
+                DataObject new_end_point = CreateDataObjectWithBall(parent.level + 1, kv.Key, kv.Value.ToString(), parent);
+                dataObjects.Add(new_end_point);
             }
         }
 
     }
 
-    public void recursiveRead()
+    public void ProcessLevelOccurence(int num)
     {
+        // If the number is already in the dictionary, increment its count
+        if (level_occurrences.ContainsKey(num))
+        {
+            level_occurrences[num]++;
+        }
+        // Otherwise, add it to the dictionary with count 1
+        else
+        {
+            level_occurrences[num] = 1;
+        }
+    }
+
+    public void PositionDataBalls()
+    {
+
+        //Radius abhängig von Level und Anzahl Bälle
+
+        int previous_nr_balls = 0;
+
+        foreach(int key in level_occurrences.Keys)
+        {
+            Debug.Log(key + "-:-" + level_occurrences[key]);
+
+            for (var i = 0; i < dataObjects.Count; i++)
+            {
+                if(key == dataObjects[i].level)
+                {
+                    int ballCount = level_occurrences[key] + previous_nr_balls;
+                    float angle = (i * Mathf.PI * 2f) / ballCount;
+                    Vector3 v = new Vector3(Mathf.Cos(angle) * ((ballCount / 5) + 1.5f * key), 6, Mathf.Sin(angle) * ((ballCount / 5) + 1.5f * key));
+                    dataObjects[i].DataBall.transform.position = v;
+                }
+            }
+            previous_nr_balls += level_occurrences[key];
+        }
+        
 
     }
 
+    public void DrawLinesBetweenDataBalls()
+    {
+
+    }
 }
