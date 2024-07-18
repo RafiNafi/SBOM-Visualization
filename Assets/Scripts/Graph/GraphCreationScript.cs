@@ -7,7 +7,6 @@ using UnityEngine;
 public class GraphCreationScript : MonoBehaviour
 {
     public GameObject PointPrefab;
-    public LineDrawer LineDrawer;
 
     // Start is called before the first frame update
     void Start()
@@ -23,7 +22,7 @@ public class GraphCreationScript : MonoBehaviour
 
     public void CreateGraphAndLines()
     {
-        LineDrawer ld = new LineDrawer();
+        LineDrawer ld = new LineDrawer(0.04f);
 
         int ballCount = 50;
         Vector3 previousV = new Vector3(1, 1, 1); //init vector

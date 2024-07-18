@@ -3,25 +3,17 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 
-public class LineDrawer : MonoBehaviour
+public class LineDrawer
 {
 
     GameObject newLine;
     LineRenderer lineRenderer;
     float lineW = 0.04f;
 
-    // Start is called before the first frame update
-    void Start()
+    public LineDrawer(float lineW)
     {
-
+        this.lineW = lineW;
     }
-
-    // Update is called once per frame
-    void Update()
-    {
-        
-    }
-
 
     public void CreateLine(List<Vector3> pointlist)
     {

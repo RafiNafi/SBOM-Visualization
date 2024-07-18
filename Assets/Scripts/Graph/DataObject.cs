@@ -10,6 +10,7 @@ public class DataObject
     public string value;
     public DataObject parent;
     public GameObject relationtship_line_parent;
+    public int nr_children = 0;
     //public Vector3 line_position1, line_position2;
     //public List<DataObject> children;
 
