@@ -21,12 +21,14 @@ public class InputReader : MonoBehaviour
     List<DataObject> dataObjects = new List<DataObject>();
     Dictionary<int, int> level_occurrences = new Dictionary<int, int>();
     public LineDrawer ld;
+    Dictionary<string, UnityEngine.Color> colors = new Dictionary<string, UnityEngine.Color>();
 
     // Start is called before the first frame update
     void Start()
     {
         ReadFileAndCreateObjects();
         PositionDataBalls();
+        ColorDataBalls();
     }
 
     // Update is called once per frame
@@ -218,6 +220,28 @@ public class InputReader : MonoBehaviour
             pointlist.Add(point.DataBall.transform.position);
             pointlist.Add(point.parent.DataBall.transform.position);
             ld.CreateLine(pointlist);
+        }
+    }
+
+    public void ColorDataBalls()
+    {
+        foreach (DataObject ball in dataObjects)
+        {
+
+            if (colors.ContainsKey(ball.key))
+            {
+                colors.TryGetValue(ball.key, out var color);
+
+                ball.DataBall.GetComponentInChildren<Renderer>().material.color = color;
+            } 
+            else
+            {
+                UnityEngine.Color c = UnityEngine.Random.ColorHSV();
+
+                ball.DataBall.GetComponentInChildren<Renderer>().material.color = c;
+                colors.Add(ball.key, c);
+            }
+
         }
     }
 }
