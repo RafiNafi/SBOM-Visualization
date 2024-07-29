@@ -11,6 +11,7 @@ public class DataObject
     public DataObject parent;
     public GameObject relationtship_line_parent;
     public int nr_children = 0;
+    public bool isExpanded = true;
     //public Vector3 line_position1, line_position2;
     //public List<DataObject> children;
 

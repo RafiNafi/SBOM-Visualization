@@ -20,8 +20,8 @@ public class LineDrawer
         newLine = new GameObject();
         lineRenderer = newLine.AddComponent<LineRenderer>();
         lineRenderer.material = new Material(Shader.Find("Sprites/Default"));
-        lineRenderer.startColor = Color.blue;
-        lineRenderer.endColor = Color.blue;
+        lineRenderer.startColor = new Color(0, 0, 1, 0.8f);
+        lineRenderer.endColor = new Color(0, 0, 1, 0.8f);
         lineRenderer.startWidth = lineW;
         lineRenderer.endWidth = lineW;
 

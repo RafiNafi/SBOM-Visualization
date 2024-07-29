@@ -61,7 +61,16 @@ public class InputReader : MonoBehaviour
     {
         GameObject dataPoint = Instantiate(BallPrefab, new Vector3(1, 1, 1), Quaternion.identity);
         TextMeshPro text = dataPoint.GetComponentInChildren<TextMeshPro>();
-        text.text = key+":"+value;
+
+        if(value != "")
+        {
+            text.text = key + ":" + value;
+        }
+        else
+        {
+            text.text = key;
+        }
+
         dataPoint.GetComponentInChildren<Renderer>().material.color = new UnityEngine.Color(0, 0, 1, 1.0f);
 
         if(parent != null)
@@ -194,7 +203,7 @@ public class InputReader : MonoBehaviour
                 {
                     int ballCount = level_occurrences[key] + previous_nr_balls;
                     float angle = (i * Mathf.PI * 2f) / ballCount;
-                    Vector3 v = new Vector3(Mathf.Cos(angle) * ((ballCount) + 1.5f * key), 6 + key * 1, Mathf.Sin(angle) * ((ballCount) + 1.5f * key * 1));
+                    Vector3 v = new Vector3(Mathf.Cos(angle) * ((ballCount) + 1.5f * key), 6 + key * 2, Mathf.Sin(angle) * ((ballCount) + 1.5f * key * 1));
                     dataObjects[i].DataBall.transform.position = v;
                     //Debug.Log(dataObjects[i].nr_children);
 
