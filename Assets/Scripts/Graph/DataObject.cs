@@ -9,7 +9,7 @@ public class DataObject
     public string key;
     public string value;
     public DataObject parent;
-    public GameObject relationtship_line_parent;
+    public GameObject relationship_line_parent;
     public int nr_children = 0;
     public bool isExpanded = true;
     //public Vector3 line_position1, line_position2;

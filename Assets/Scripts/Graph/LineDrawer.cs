@@ -15,7 +15,7 @@ public class LineDrawer
         this.lineW = lineW;
     }
 
-    public void CreateLine(List<Vector3> pointlist)
+    public GameObject CreateLine(List<Vector3> pointlist)
     {
         newLine = new GameObject();
         lineRenderer = newLine.AddComponent<LineRenderer>();
@@ -28,5 +28,6 @@ public class LineDrawer
         lineRenderer.positionCount = 2;
         lineRenderer.SetPositions(pointlist.ToArray());
         
+        return newLine;
     }
 }

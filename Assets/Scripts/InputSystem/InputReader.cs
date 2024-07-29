@@ -18,10 +18,11 @@ using static UnityEngine.Rendering.DebugUI;
 public class InputReader : MonoBehaviour
 {
     public GameObject BallPrefab;
-    List<DataObject> dataObjects = new List<DataObject>();
-    Dictionary<int, int> level_occurrences = new Dictionary<int, int>();
+
+    public List<DataObject> dataObjects = new List<DataObject>();
+    public Dictionary<int, int> level_occurrences = new Dictionary<int, int>();
     public LineDrawer ld;
-    Dictionary<string, UnityEngine.Color> colors = new Dictionary<string, UnityEngine.Color>();
+    public Dictionary<string, UnityEngine.Color> colors = new Dictionary<string, UnityEngine.Color>();
 
     // Start is called before the first frame update
     void Start()
@@ -228,7 +229,9 @@ public class InputReader : MonoBehaviour
             List<Vector3> pointlist = new List<Vector3>();
             pointlist.Add(point.DataBall.transform.position);
             pointlist.Add(point.parent.DataBall.transform.position);
-            ld.CreateLine(pointlist);
+            GameObject line = ld.CreateLine(pointlist);
+
+            point.relationship_line_parent = line;
         }
     }
 
