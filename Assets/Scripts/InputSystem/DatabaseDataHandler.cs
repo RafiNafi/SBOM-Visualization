@@ -16,7 +16,7 @@ public class DatabaseDataHandler : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
-        //GetDatabaseData();
+        
     }
 
     // Update is called once per frame
@@ -27,13 +27,14 @@ public class DatabaseDataHandler : MonoBehaviour
 
     public BsonDocument GetDatabaseData()
     {
-        // Create client connection to our MongoDB database
+        // Create client connection to MongoDB database
         var client = new MongoClient(MongoDBConnectionString);
-
         var database = client.GetDatabase("SBOMDATA");
         var collection = database.GetCollection<BsonDocument>("SBOMDATA");
 
-        var filter = Builders<BsonDocument>.Filter.Eq("SPDXID", "SPDXRef-DOCUMENT");
+        //var filter = Builders<BsonDocument>.Filter.Eq("SPDXID", "SPDXRef-DOCUMENT"); // big example
+        var filter = Builders<BsonDocument>.Filter.Eq("dataLicense", "CC0-1"); // small example
+        
         var doc = collection.Find(filter).First();
 
 
@@ -41,5 +42,25 @@ public class DatabaseDataHandler : MonoBehaviour
         //Debug.Log(doc.ToString());
 
         return doc;
+    }
+
+    public List<string> GetOnlyAllDocumentNames()
+    {
+        List<string> names = new List<string>();
+
+        var client = new MongoClient(MongoDBConnectionString);
+        var database = client.GetDatabase("SBOMDATA");
+        var collection = database.GetCollection<BsonDocument>("SBOMDATA");
+
+        var projection = Builders<BsonDocument>.Projection.Include("_id");
+        var filter = Builders<BsonDocument>.Filter.Eq("dataLicense", "CC0-1");
+        var docs = collection.Find(new BsonDocument()).Project(projection).ToList();
+
+        foreach (var document in docs)
+        {
+            names.Add(document["_id"].ToString());
+        }
+
+        return names;
     }
 }

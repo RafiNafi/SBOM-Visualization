@@ -7,10 +7,12 @@ public class MenuInteraction : MonoBehaviour
 {
     public InputReader reader;
 
+    public DatabaseDataHandler dbHandler;
+
     // Start is called before the first frame update
     void Start()
     {
-        
+        AddScrollviewContent();
     }
 
     // Update is called once per frame
@@ -36,5 +38,9 @@ public class MenuInteraction : MonoBehaviour
 
     }
 
+    public void AddScrollviewContent()
+    {
+        List<string> list = dbHandler.GetOnlyAllDocumentNames();
 
+    }
 }
