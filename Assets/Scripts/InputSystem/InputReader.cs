@@ -30,9 +30,7 @@ public class InputReader : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
-        ReadFileAndCreateObjects();
-        PositionDataBalls();
-        ColorDataBalls();
+
     }
 
     // Update is called once per frame
@@ -41,18 +39,37 @@ public class InputReader : MonoBehaviour
         
     }
 
-    public void ReadFileAndCreateObjects()
+
+    public void CreateGraph(BsonDocument sbomElement)
+    {
+        Initilization();
+        ReadFileAndCreateObjects(sbomElement);
+        PositionDataBalls();
+        ColorDataBalls();
+    }
+
+    public void Initilization()
+    {
+        foreach (var obj in dataObjects)
+        {
+            Destroy(obj.DataBall);
+            Destroy(obj.relationship_line_parent);
+        }
+
+        dataObjects.Clear();
+        level_occurrences.Clear();
+        colors.Clear();
+    }
+
+    public void ReadFileAndCreateObjects(BsonDocument sbomElement)
     {
         //string jsonTest = "{\r\n  \"name\": \"32098/github.com/CortezFrazierJr/my_recipe_book-418bed3e334f2c1b2d4de973e069037dc2faf60e\",\r\n  \"documentNamespace\": \"https://s3.us-east-1.amazonaws.com/blob.fossa.io/FOSSA_BOMS/custom%2B32098%2Fgithub.com%2FCortezFrazierJr%2Fmy_recipe_book%24418bed3e334f2c1b2d4de973e069037dc2faf60e\",\r\n  \"dataLicense\": \"CC0-1.0\",\r\n  \"packages\": [\r\n    {\r\n      \"SPDXID\": \"SPDXRef-custom-32098-github.com-CortezFrazierJr-my-recipe-book-418bed3e334f2c1b2d4de973e069037dc2faf60e\",\r\n      \"name\": \"https://github.com/CortezFrazierJr/my_recipe_book.git\",\r\n      \"versionInfo\": \"418bed3e334f2c1b2d4de973e069037dc2faf60e\",\r\n      \"filesAnalyzed\": true,\r\n      \"downloadLocation\": \"NOASSERTION\",\r\n      \"originator\": \"Organization: Custom (provided build)\",\r\n      \"supplier\": \"Organization: Uchiha Cortez\",\r\n      \"packageFileName\": \"custom+32098/github.com/CortezFrazierJr/my_recipe_book$418bed3e334f2c1b2d4de973e069037dc2faf60e\",\r\n      \"summary\": \"Project uploaded via Provided Builds from fossa-cli\",\r\n      \"licenseDeclared\": \"LicenseRef-ISC-26342263\",\r\n      \"copyrightText\": \"NONE\",\r\n      \"homepage\": \"NOASSERTION\",\r\n      \"licenseConcluded\": \"NOASSERTION\",\r\n      \"checksums\": [\r\n        {\r\n          \"algorithm\": \"MD5\",\r\n          \"checksumValue\": \"10cab2cd0690ffb91baeba0b42a3453b\"\r\n        },\r\n        {\r\n          \"algorithm\": \"SHA1\",\r\n          \"checksumValue\": \"c147bad1f95516ab7bee6ba2023020d7123c2fac\"\r\n        },\r\n        {\r\n          \"algorithm\": \"SHA256\",\r\n          \"checksumValue\": \"ee1300ac533cebc2d070ce3765685d5f7fca2a5a78ca15068323f68ed63d4abf\"\r\n        }\r\n      ],\r\n      \"externalRefs\": []\r\n    }]}";
         //string jsonTest = System.IO.File.ReadAllText("C:\\Users\\Rafi\\Desktop\\Studium Semester\\Master\\Semester 2\\Projektarbeit\\sampleSPDX.json");
         //string jsonTest = System.IO.File.ReadAllText("C:\\Users\\Rafi\\Desktop\\Studium Semester\\Master\\Semester 2\\Projektarbeit\\bom.json");
 
+        dynamic jsonObj = JObject.Parse(sbomElement.ToString());
 
-        BsonDocument bsonElements = dbHandler.GetDatabaseData();
-
-        dynamic jsonObj = JObject.Parse(bsonElements.ToString());
-
-        var dict = JsonConvert.DeserializeObject<Dictionary<string, JToken>>(bsonElements.ToString());
+        var dict = JsonConvert.DeserializeObject<Dictionary<string, JToken>>(sbomElement.ToString());
 
         //Main Root Point
         Debug.Log("ERSTELLUNG START");

@@ -44,6 +44,21 @@ public class DatabaseDataHandler : MonoBehaviour
         return doc;
     }
 
+    public BsonDocument GetDatabaseDataById(string id)
+    {
+        var client = new MongoClient(MongoDBConnectionString);
+        var database = client.GetDatabase("SBOMDATA");
+        var collection = database.GetCollection<BsonDocument>("SBOMDATA");
+
+        var filter = Builders<BsonDocument>.Filter.Eq("_id", ObjectId.Parse(id)); 
+
+        var doc = collection.Find(filter).First();
+
+        doc["_id"] = doc["_id"].ToString();
+
+        return doc;
+    }
+
     public List<string> GetOnlyAllDocumentNames()
     {
         List<string> names = new List<string>();
