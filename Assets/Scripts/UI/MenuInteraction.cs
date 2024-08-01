@@ -54,23 +54,24 @@ public class MenuInteraction : MonoBehaviour
                 {
                     
                     ball.DataBall.SetActive(false);
-                    if(ball.relationship_line_parent != null)
+                    if(ball.relationship_line_parent.Count > 0)
                     {
-                        ball.relationship_line_parent.SetActive(false);
+                        ball.relationship_line_parent.ForEach(x => { x.SetActive(false); });
                     }
                 }
                 else
                 {
                     ball.DataBall.SetActive(true);
-                    if (ball.relationship_line_parent != null)
+                    if (ball.relationship_line_parent.Count > 0)
                     {
-                        ball.relationship_line_parent.SetActive(true);
+                        ball.relationship_line_parent.ForEach(x => { x.SetActive(true); });
                     }
                 }
             }
         });
     }
 
+    /*
     public void ExpandToggle(bool isOn)
     {
         int levelCap = 4;
@@ -87,7 +88,7 @@ public class MenuInteraction : MonoBehaviour
         }
 
     }
-
+    */
 
     public void AddScrollviewContent()
     {

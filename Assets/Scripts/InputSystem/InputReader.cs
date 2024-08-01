@@ -54,7 +54,11 @@ public class InputReader : MonoBehaviour
         foreach (var obj in dataObjects)
         {
             Destroy(obj.DataBall);
-            Destroy(obj.relationship_line_parent);
+
+            foreach(var parent_line in obj.relationship_line_parent)
+            {
+                Destroy(parent_line);
+            }
         }
 
         dataObjects.Clear();
@@ -224,6 +228,7 @@ public class InputReader : MonoBehaviour
         return node;
     }
 
+
     public void ProcessLevelOccurence(int num)
     {
         // If the number is already in the dictionary, increment its count
@@ -274,15 +279,19 @@ public class InputReader : MonoBehaviour
     public void DrawLinesBetweenDataBalls(DataObject point)
     {
 
-        if (point.parent != null)
+        if (point.parent.Count > 0)
         {
-            ld = new LineDrawer(0.04f);
-            List<Vector3> pointlist = new List<Vector3>();
-            pointlist.Add(point.DataBall.transform.position);
-            pointlist.Add(point.parent.DataBall.transform.position);
-            GameObject line = ld.CreateLine(pointlist);
 
-            point.relationship_line_parent = line;
+            foreach(DataObject p in point.parent) 
+            {
+                ld = new LineDrawer(0.04f);
+                List<Vector3> pointlist = new List<Vector3>();
+                pointlist.Add(point.DataBall.transform.position);
+                pointlist.Add(p.DataBall.transform.position);
+                GameObject line = ld.CreateLine(pointlist);
+
+                point.relationship_line_parent.Add(line);
+            }
         }
     }
 

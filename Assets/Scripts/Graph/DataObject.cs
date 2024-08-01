@@ -8,8 +8,8 @@ public class DataObject
     public int level = 0;
     public string key;
     public string value;
-    public DataObject parent;
-    public GameObject relationship_line_parent;
+    public List<DataObject> parent = new List<DataObject>();
+    public List<GameObject> relationship_line_parent = new List<GameObject>();
     public int nr_children = 0;
     public bool isExpanded = true;
     //public Vector3 line_position1, line_position2;
@@ -23,6 +23,10 @@ public class DataObject
         this.level = lvl;
         this.key = key;
         this.value = value;
-        this.parent = p;
+
+        if (p != null)
+        {
+            this.parent.Add(p);
+        }
     }
 }
