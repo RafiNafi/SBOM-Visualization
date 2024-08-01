@@ -45,6 +45,7 @@ public class InputReader : MonoBehaviour
     {
         Initilization();
         ReadFileAndCreateObjects(sbomElement);
+        FuseSameNodes();
         PositionDataBalls();
         ColorDataBalls();
     }
@@ -204,27 +205,70 @@ public class InputReader : MonoBehaviour
     public void FuseSameNodes()
     {
 
-        Dictionary<List<DataObject>, int> node_occurrences = new Dictionary<List<DataObject>, int>();
+        Dictionary<(string,string), List<DataObject>> nodeOccurrences = new Dictionary<(string, string), List<DataObject>>();
 
         foreach (DataObject node in dataObjects)
         {
 
-            //Check if Node with exact key and value exists already
-            DataObject ExistingNode = DoesExactNodeExistAlready(node.key, node.value);
-
-            if (ExistingNode != null)
+            if(nodeOccurrences.ContainsKey((node.key, node.value)))
             {
-
+                nodeOccurrences[(node.key, node.value)].Add(node);
+            }
+            else
+            {
+                List<DataObject> list = new List<DataObject>();
+                list.Add(node);
+                nodeOccurrences.Add((node.key, node.value), list);
             }
 
         }
+
+        foreach (var item in nodeOccurrences) 
+        {
+            if (item.Value.Count > 1) 
+            {
+                DataObject fusedNode = item.Value[0];
+                item.Value.RemoveAt(0);
+
+                foreach(DataObject obj in item.Value)
+                {
+                    //Check children of node
+                    foreach(DataObject child in dataObjects)
+                    {
+                        if (child.parent.Contains(obj) && !child.parent.Contains(fusedNode))
+                        {
+                            child.parent.Add(fusedNode);
+                            child.parent.Remove(obj);
+                        }
+                    }
+
+                    //Check parents of node
+                    obj.parent.ForEach(p => { 
+                        if(!fusedNode.parent.Contains(p))
+                        {
+                            fusedNode.parent.Add(p);
+                        } 
+                    });
+                }
+
+                item.Value.ForEach(obj => {
+                    level_occurrences[obj.level]--;
+                    Destroy(obj.DataBall);
+                    obj.parent.Clear();
+                    dataObjects.Remove(obj);
+                    });
+                
+            }
+
+        }
+
+        nodeOccurrences.Clear();
 
     }
 
     public DataObject DoesExactNodeExistAlready(string key, string value)
     {
         DataObject node = dataObjects.Find(x => (x.key == key && x.value == value));
-        // Debug.Log(node);
         return node;
     }
 
