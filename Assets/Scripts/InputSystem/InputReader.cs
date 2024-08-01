@@ -12,6 +12,7 @@ using System.Runtime.InteropServices.ComTypes;
 using TMPro;
 using Unity.VisualScripting;
 using UnityEngine;
+using UnityEngine.InputSystem;
 using UnityEngine.UIElements;
 using static UnityEngine.Rendering.DebugUI;
 
@@ -194,6 +195,33 @@ public class InputReader : MonoBehaviour
             }
         }
 
+    }
+
+    public void FuseSameNodes()
+    {
+
+        Dictionary<List<DataObject>, int> node_occurrences = new Dictionary<List<DataObject>, int>();
+
+        foreach (DataObject node in dataObjects)
+        {
+
+            //Check if Node with exact key and value exists already
+            DataObject ExistingNode = DoesExactNodeExistAlready(node.key, node.value);
+
+            if (ExistingNode != null)
+            {
+
+            }
+
+        }
+
+    }
+
+    public DataObject DoesExactNodeExistAlready(string key, string value)
+    {
+        DataObject node = dataObjects.Find(x => (x.key == key && x.value == value));
+        // Debug.Log(node);
+        return node;
     }
 
     public void ProcessLevelOccurence(int num)
