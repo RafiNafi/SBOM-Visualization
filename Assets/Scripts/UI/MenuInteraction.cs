@@ -20,6 +20,8 @@ public class MenuInteraction : MonoBehaviour
     public UnityEngine.UI.Slider sliderLevel;
     public TextMeshProUGUI sliderText;
 
+    public TMP_InputField inputSearch;
+
     // Start is called before the first frame update
     void Start()
     {
@@ -71,25 +73,6 @@ public class MenuInteraction : MonoBehaviour
         });
     }
 
-    /*
-    public void ExpandToggle(bool isOn)
-    {
-        int levelCap = 4;
-
-        Debug.Log(isOn);
-
-        foreach (DataObject ball in reader.dataObjects)
-        {
-            if (ball.level > levelCap)
-            {
-                ball.DataBall.SetActive(isOn);
-                ball.relationship_line_parent.SetActive(isOn);
-            }
-        }
-
-    }
-    */
-
     public void AddScrollviewContent()
     {
         List<string> list = dbHandler.GetOnlyAllDocumentNames();
@@ -115,5 +98,16 @@ public class MenuInteraction : MonoBehaviour
         reader.CreateGraph(bsonElements);
         Debug.Log(name);
         InitSliders();
+    }
+
+
+    public void OpenKeyboard()
+    {
+        
+    }
+
+    public void HightlightSearchedNode()
+    {
+
     }
 }

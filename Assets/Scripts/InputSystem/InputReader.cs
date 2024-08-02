@@ -261,17 +261,9 @@ public class InputReader : MonoBehaviour
             }
 
         }
-
         nodeOccurrences.Clear();
 
     }
-
-    public DataObject DoesExactNodeExistAlready(string key, string value)
-    {
-        DataObject node = dataObjects.Find(x => (x.key == key && x.value == value));
-        return node;
-    }
-
 
     public void ProcessLevelOccurence(int num)
     {
