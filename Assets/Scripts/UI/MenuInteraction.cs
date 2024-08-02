@@ -98,6 +98,7 @@ public class MenuInteraction : MonoBehaviour
         reader.CreateGraph(bsonElements);
         Debug.Log(name);
         InitSliders();
+
     }
 
 
@@ -108,6 +109,45 @@ public class MenuInteraction : MonoBehaviour
 
     public void HightlightSearchedNode()
     {
+        string text = inputSearch.text;
+
+        if(text != null && text != "")
+        {
+            foreach (DataObject obj in reader.dataObjects)
+            {
+                if (!obj.key.Contains(text) && !obj.value.Contains(text))
+                {
+                    ChangeNodeTransparency(obj, 0.2f, 0.2f);
+
+                }
+                else
+                {
+                    ChangeNodeTransparency(obj, 1f, 0.9f);
+                }
+            }
+        }
+        else
+        {
+            foreach (DataObject obj in reader.dataObjects)
+            {
+                ChangeNodeTransparency(obj, 1f, 0.9f);
+            }
+        }
+
+    }
+
+    public void ChangeNodeTransparency(DataObject obj, float valueBall, float valueLines) 
+    {
+        UnityEngine.Color c = obj.DataBall.GetComponentInChildren<Renderer>().material.color;
+        c.a = valueBall;
+
+        obj.DataBall.GetComponentInChildren<Renderer>().material.color = c;
+
+        foreach (var line in obj.relationship_line_parent)
+        {
+            line.GetComponent<LineRenderer>().startColor = new UnityEngine.Color(0, 0, 1, valueLines);
+            line.GetComponent<LineRenderer>().endColor = new UnityEngine.Color(0, 0, 1, valueLines);
+        }
 
     }
 }
