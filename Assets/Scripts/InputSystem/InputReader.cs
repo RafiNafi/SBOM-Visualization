@@ -39,7 +39,7 @@ public class InputReader : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        
+
     }
 
 
@@ -47,7 +47,7 @@ public class InputReader : MonoBehaviour
     {
         Initilization();
         ReadFileAndCreateObjects(sbomElement);
-        FuseSameNodes();
+        FuseSameNodes(); //option to disable this
         PositionDataBalls(graphType);
         ColorDataBalls();
     }
@@ -333,8 +333,59 @@ public class InputReader : MonoBehaviour
     public void PositionAsForceDirectedGraph()
     {
 
+        float attractionForce = 0.5f;
+        float repulsionForce = 1.0f;
+        float damping = 0.9f;
+
+        foreach (DataObject node in dataObjects)
+        {
+            Vector3 force = Vector3.zero;
+            node.DataBall.transform.position = UnityEngine.Random.insideUnitSphere * 10;
+
+            // Apply repulsive force from all nodes
+            foreach (DataObject other in dataObjects)
+            {
+
+                if (node != other)
+                {
+                    Vector3 direction = node.DataBall.transform.position - other.DataBall.transform.position;
+                    float distance = direction.magnitude;
+                    if (distance > 0) // avoid division by zero
+                    {
+                        force += direction.normalized * repulsionForce / (distance * distance);
+                    }
+                }
+            }
+
+            // Apply attractive force to connected nodes
+            foreach (DataObject neighbor in node.parent)
+            {
+                Vector3 direction = neighbor.DataBall.transform.position - node.DataBall.transform.position;
+                float distance = direction.magnitude;
+                force += direction.normalized * attractionForce * distance;
+            }
+
+            node.velocity = (node.velocity + force) * damping;
+        }
+
+        UpdatePositions();
+
+        DrawLinesBetweenDataBalls();
     }
 
+    public void UpdatePositions()
+    {
+        foreach (DataObject node in dataObjects)
+        {
+            //node.DataBall.transform.position += (node.velocity * Time.deltaTime);
+            node.DataBall.transform.position += node.velocity;
+        }
+    }
+
+    public void PositionAsForceDirectedTree()
+    {
+
+    }
 
     public void PositionByCategoryAndLevel()
     {

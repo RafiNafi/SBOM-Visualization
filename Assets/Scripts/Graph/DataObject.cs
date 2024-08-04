@@ -12,6 +12,7 @@ public class DataObject
     public List<GameObject> relationship_line_parent = new List<GameObject>();
     public int nr_children = 0;
     public bool isExpanded = true;
+    public Vector3 velocity;
     //public Vector3 line_position1, line_position2;
     //public List<DataObject> children;
 
@@ -23,6 +24,7 @@ public class DataObject
         this.level = lvl;
         this.key = key;
         this.value = value;
+        this.velocity = Vector3.zero;
 
         if (p != null)
         {
