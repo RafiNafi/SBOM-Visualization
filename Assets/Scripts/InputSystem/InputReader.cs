@@ -11,6 +11,7 @@ using System.Linq;
 using System.Runtime.InteropServices.ComTypes;
 using TMPro;
 using Unity.VisualScripting;
+using UnityEditor.Experimental.GraphView;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.UIElements;
@@ -282,53 +283,131 @@ public class InputReader : MonoBehaviour
     public void PositionDataBalls()
     {
 
-        //Radius depending on level and number of 3d balls
+        PositionAsRadialTidyTree();
 
+
+    }
+
+    public void PositionAsRadialTidyTree()
+    {
+        //Radius depending on level and number of 3d balls
         int previous_nr_balls = 0;
 
-        foreach(int key in level_occurrences.Keys)
+        foreach (int key in level_occurrences.Keys)
         {
             Debug.Log(key + "-:-" + level_occurrences[key]);
 
             for (var i = 0; i < dataObjects.Count; i++)
             {
-                if(key == dataObjects[i].level)
+                if (key == dataObjects[i].level)
                 {
                     int ballCount = level_occurrences[key] + previous_nr_balls;
                     float angle = (i * Mathf.PI * 2f) / ballCount;
                     Vector3 v = new Vector3(Mathf.Cos(angle) * ((ballCount) + 1.5f * key), 6 + key * 2, Mathf.Sin(angle) * ((ballCount) + 1.5f * key * 1));
                     dataObjects[i].DataBall.transform.position = v;
                     //Debug.Log(dataObjects[i].nr_children);
-
-                    //Draw relationship lines
-                    DrawLinesBetweenDataBalls(dataObjects[i]);
                 }
             }
             previous_nr_balls += level_occurrences[key];
         }
-        
 
+        DrawLinesBetweenDataBalls();
+    }
+
+    public void PositionAsForceDirectedGraph()
+    {
+
+    }
+
+
+    public void PositionAsSphere()
+    {
+
+        //Position by category and level ocurrence for every layer
+
+        Dictionary<string, List<DataObject>> nodeOccurrences = new Dictionary<string, List<DataObject>>();
+
+        foreach (DataObject dobj  in dataObjects)
+        {
+
+            if (nodeOccurrences.ContainsKey(dobj.key))
+            {
+                nodeOccurrences[dobj.key].Add(dobj);
+            }
+            else
+            {
+                List<DataObject> list = new List<DataObject>();
+                list.Add(dobj);
+                nodeOccurrences.Add(dobj.key, list);
+            }
+        }
+
+        int layer_level = 0;
+        int alternate = 3;
+
+        foreach(int key in level_occurrences.Keys)
+        {
+            foreach(var obj in nodeOccurrences)
+            {
+
+                if (key == obj.Value[0].level)
+                {
+                    layer_level++;
+
+                    for(var i = 0; i < obj.Value.Count; i++)
+                    {
+                        if(obj.Value.Count < 2)
+                        {
+                            int ballCount = obj.Value.Count;
+                            float angle = (i * Mathf.PI * 2f) / ballCount;
+                            Vector3 v = new Vector3(Mathf.Cos(angle) * ((ballCount)) + alternate, 6 + layer_level * 2, Mathf.Sin(angle) * ((ballCount)));
+                            obj.Value[i].DataBall.transform.position = v;
+                            alternate = alternate * (-1);
+                        }
+                        else
+                        {
+                            int ballCount = obj.Value.Count;
+                            float angle = (i * Mathf.PI * 2f) / ballCount;
+                            Vector3 v = new Vector3(Mathf.Cos(angle) * ((ballCount)), 6 + layer_level * 2, Mathf.Sin(angle) * ((ballCount)));
+                            obj.Value[i].DataBall.transform.position = v;
+                        }
+                        
+                    }
+
+                }
+            }
+        }
+
+        DrawLinesBetweenDataBalls();
     }
 
     //Vorgehen: Zuerst benötigten platz für jedes layer berechnen => danach die Bälle positionieren
 
-    public void DrawLinesBetweenDataBalls(DataObject point)
+    public void DrawLinesBetweenDataBalls()
     {
 
-        if (point.parent.Count > 0)
+        foreach (DataObject point in dataObjects)
         {
+            point.relationship_line_parent.ForEach(line => {
+                Destroy(line);
+            });
 
-            foreach(DataObject p in point.parent) 
+            if (point.parent.Count > 0)
             {
-                ld = new LineDrawer(0.04f);
-                List<Vector3> pointlist = new List<Vector3>();
-                pointlist.Add(point.DataBall.transform.position);
-                pointlist.Add(p.DataBall.transform.position);
-                GameObject line = ld.CreateLine(pointlist);
 
-                point.relationship_line_parent.Add(line);
+                foreach (DataObject p in point.parent)
+                {
+                    ld = new LineDrawer(0.04f);
+                    List<Vector3> pointlist = new List<Vector3>();
+                    pointlist.Add(point.DataBall.transform.position);
+                    pointlist.Add(p.DataBall.transform.position);
+                    GameObject line = ld.CreateLine(pointlist);
+
+                    point.relationship_line_parent.Add(line);
+                }
             }
         }
+
     }
 
     public void ColorDataBalls()

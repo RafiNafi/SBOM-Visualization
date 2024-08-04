@@ -22,6 +22,8 @@ public class MenuInteraction : MonoBehaviour
 
     public TMP_InputField inputSearch;
 
+    public TMP_Dropdown dropdown;
+
     // Start is called before the first frame update
     void Start()
     {
@@ -149,5 +151,25 @@ public class MenuInteraction : MonoBehaviour
             line.GetComponent<LineRenderer>().endColor = new UnityEngine.Color(0, 0, 1, valueLines);
         }
 
+    }
+
+    public void ChangeGraphStyle()
+    {
+        Debug.Log(dropdown.options[dropdown.value].text);
+
+        switch (dropdown.options[dropdown.value].text)
+        {
+            case "Radial Tidy Tree":
+                reader.PositionAsRadialTidyTree();
+                break;
+
+            case "Force-directed Graph":
+                reader.PositionAsForceDirectedGraph();
+                break;
+
+            case "Sphere":
+                reader.PositionAsSphere();
+                break;
+        }
     }
 }
