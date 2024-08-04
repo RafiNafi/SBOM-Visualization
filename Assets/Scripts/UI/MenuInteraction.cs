@@ -46,6 +46,7 @@ public class MenuInteraction : MonoBehaviour
         sliderLevel.maxValue = levelCap;
         sliderLevel.value = levelCap;
 
+        sliderLevel.onValueChanged.RemoveAllListeners();
 
         sliderLevel.onValueChanged.AddListener((y) =>
         {
@@ -97,7 +98,7 @@ public class MenuInteraction : MonoBehaviour
     {
         
         BsonDocument bsonElements = dbHandler.GetDatabaseDataById(name);
-        reader.CreateGraph(bsonElements);
+        reader.CreateGraph(bsonElements, dropdown.options[dropdown.value].text);
         Debug.Log(name);
         InitSliders();
 
@@ -157,19 +158,8 @@ public class MenuInteraction : MonoBehaviour
     {
         Debug.Log(dropdown.options[dropdown.value].text);
 
-        switch (dropdown.options[dropdown.value].text)
-        {
-            case "Radial Tidy Tree":
-                reader.PositionAsRadialTidyTree();
-                break;
+        reader.PositionDataBalls(dropdown.options[dropdown.value].text);
 
-            case "Force-directed Graph":
-                reader.PositionAsForceDirectedGraph();
-                break;
-
-            case "Sphere":
-                reader.PositionAsSphere();
-                break;
-        }
+        InitSliders();
     }
 }

@@ -14,6 +14,7 @@ using Unity.VisualScripting;
 using UnityEditor.Experimental.GraphView;
 using UnityEngine;
 using UnityEngine.InputSystem;
+using UnityEngine.UI;
 using UnityEngine.UIElements;
 using static UnityEngine.Rendering.DebugUI;
 
@@ -42,12 +43,12 @@ public class InputReader : MonoBehaviour
     }
 
 
-    public void CreateGraph(BsonDocument sbomElement)
+    public void CreateGraph(BsonDocument sbomElement, string graphType)
     {
         Initilization();
         ReadFileAndCreateObjects(sbomElement);
         FuseSameNodes();
-        PositionDataBalls();
+        PositionDataBalls(graphType);
         ColorDataBalls();
     }
 
@@ -280,11 +281,26 @@ public class InputReader : MonoBehaviour
         }
     }
 
-    public void PositionDataBalls()
+    public void PositionDataBalls(string type)
     {
+        switch (type)
+        {
+            case "Radial Tidy Tree":
+                PositionAsRadialTidyTree();
+                break;
 
-        PositionAsRadialTidyTree();
+            case "Force-directed Graph":
+                PositionAsForceDirectedGraph();
+                break;
 
+            case "Sphere":
+                PositionOnSphere();
+                break;
+
+            case "Category And Level":
+                PositionByCategoryAndLevel();
+                break;
+        }
 
     }
 
@@ -320,7 +336,7 @@ public class InputReader : MonoBehaviour
     }
 
 
-    public void PositionAsSphere()
+    public void PositionByCategoryAndLevel()
     {
 
         //Position by category and level ocurrence for every layer
@@ -381,8 +397,33 @@ public class InputReader : MonoBehaviour
         DrawLinesBetweenDataBalls();
     }
 
-    //Vorgehen: Zuerst benötigten platz für jedes layer berechnen => danach die Bälle positionieren
+    public void PositionOnSphere()
+    {
+        float phi = Mathf.PI * (3 - Mathf.Sqrt(5));
 
+        float sphereRadius = 2.0f * 0.5f * Mathf.Sqrt(dataObjects.Count); // spacing * ball radius * number of balls
+
+        for (int i = 0; i < dataObjects.Count; i++)
+        {
+            float y = 1 - (i / (float)(dataObjects.Count - 1)) * 2; 
+            float radiusAtY = Mathf.Sqrt(1 - y * y); 
+
+            float theta = phi * i; 
+
+            float x = Mathf.Cos(theta) * radiusAtY;
+            float z = Mathf.Sin(theta) * radiusAtY;
+
+            Vector3 position = (new Vector3(x, y, z) * sphereRadius) + new Vector3(sphereRadius * 1.5f, 0,0);
+
+
+            dataObjects[i].DataBall.transform.position = position;
+        }
+
+        DrawLinesBetweenDataBalls();
+
+    }
+
+    //Vorgehen: Zuerst benötigten platz für jedes layer berechnen => danach die Bälle positionieren
     public void DrawLinesBetweenDataBalls()
     {
 
@@ -391,6 +432,7 @@ public class InputReader : MonoBehaviour
             point.relationship_line_parent.ForEach(line => {
                 Destroy(line);
             });
+            point.relationship_line_parent.Clear();
 
             if (point.parent.Count > 0)
             {
