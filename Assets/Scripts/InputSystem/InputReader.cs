@@ -16,6 +16,7 @@ using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.UI;
 using UnityEngine.UIElements;
+using static Unity.Burst.Intrinsics.X86.Avx;
 using static UnityEngine.Rendering.DebugUI;
 
 
@@ -27,6 +28,7 @@ public class InputReader : MonoBehaviour
     public Dictionary<int, int> level_occurrences = new Dictionary<int, int>();
     public LineDrawer ld;
     public Dictionary<string, UnityEngine.Color> colors = new Dictionary<string, UnityEngine.Color>();
+    public List<GameObject> categoryBalls = new List<GameObject>();
 
     public DatabaseDataHandler dbHandler;
 
@@ -50,6 +52,7 @@ public class InputReader : MonoBehaviour
         FuseSameNodes(); //option to disable this
         PositionDataBalls(graphType);
         ColorDataBalls();
+        CreateCategories();
     }
 
     public void Initilization()
@@ -64,9 +67,15 @@ public class InputReader : MonoBehaviour
             }
         }
 
+        foreach (var categoryBall in categoryBalls)
+        {
+            Destroy(categoryBall);
+        }
+
         dataObjects.Clear();
         level_occurrences.Clear();
         colors.Clear();
+        categoryBalls.Clear();
     }
 
     public void ReadFileAndCreateObjects(BsonDocument sbomElement)
@@ -332,8 +341,7 @@ public class InputReader : MonoBehaviour
 
     public void PositionAsForceDirectedGraph()
     {
-
-        float attractionForce = 0.5f;
+        float attractionForce = 1.5f;
         float repulsionForce = 1.0f;
         float damping = 0.9f;
 
@@ -342,6 +350,7 @@ public class InputReader : MonoBehaviour
             Vector3 force = Vector3.zero;
             node.DataBall.transform.position = UnityEngine.Random.insideUnitSphere * 10;
 
+            /*
             // Apply repulsive force from all nodes
             foreach (DataObject other in dataObjects)
             {
@@ -352,10 +361,11 @@ public class InputReader : MonoBehaviour
                     float distance = direction.magnitude;
                     if (distance > 0) // avoid division by zero
                     {
-                        force += direction.normalized * repulsionForce / (distance * distance);
+                        force += direction.normalized * repulsionForce  / (distance * distance);
                     }
                 }
             }
+            */
 
             // Apply attractive force to connected nodes
             foreach (DataObject neighbor in node.parent)
@@ -367,7 +377,6 @@ public class InputReader : MonoBehaviour
 
             node.velocity = (node.velocity + force) * damping;
         }
-
         UpdatePositions();
 
         DrawLinesBetweenDataBalls();
@@ -379,6 +388,8 @@ public class InputReader : MonoBehaviour
         {
             //node.DataBall.transform.position += (node.velocity * Time.deltaTime);
             node.DataBall.transform.position += node.velocity;
+            Vector3 vec = new Vector3(1f, 1f, 1f);
+            node.DataBall.transform.position = Vector3.Scale(node.DataBall.transform.position, vec);
         }
     }
 
@@ -522,6 +533,36 @@ public class InputReader : MonoBehaviour
                 colors.Add(ball.key, c);
             }
 
+        }
+    }
+
+    public void CreateCategories()
+    {
+        float sqrt_val = Mathf.Sqrt(colors.Count);
+        int rounded_val = Mathf.CeilToInt(sqrt_val);
+
+        Debug.Log(rounded_val);
+        Debug.Log(colors.Count);
+
+        for (int x = 0; x < rounded_val; x++)
+        {
+            for (int z = 0; z < rounded_val; z++)
+            {
+                int index = z * rounded_val + x;
+
+                if(index < colors.Count)
+                {
+                    GameObject categoryPoint = Instantiate(BallPrefab, new Vector3(1 - x, 1 + z, 1 + z), Quaternion.identity);
+                    TextMeshPro text = categoryPoint.GetComponentInChildren<TextMeshPro>();
+
+                    text.text = colors.ElementAt(index).Key;
+                    categoryPoint.GetComponentInChildren<Renderer>().material.color = colors.ElementAt(index).Value;
+
+                    categoryPoint.transform.localScale = new Vector3(0.5f, 0.5f, 0.5f);
+
+                    categoryBalls.Add(categoryPoint);
+                }
+            }
         }
     }
 }
