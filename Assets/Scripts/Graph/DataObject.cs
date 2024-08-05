@@ -13,6 +13,7 @@ public class DataObject
     public int nr_children = 0;
     public bool isExpanded = true;
     public Vector3 velocity;
+    public string suffix = "";
     //public Vector3 line_position1, line_position2;
     //public List<DataObject> children;
 
