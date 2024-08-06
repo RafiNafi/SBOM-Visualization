@@ -16,7 +16,7 @@ public class DatabaseDataHandler : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
-        
+
     }
 
     // Update is called once per frame
@@ -70,7 +70,7 @@ public class DatabaseDataHandler : MonoBehaviour
         var collection = database.GetCollection<BsonDocument>("SBOMDATA");
 
         var projection = Builders<BsonDocument>.Projection.Include("_id");
-        var filter = Builders<BsonDocument>.Filter.Eq("dataLicense", "CC0-1");
+        // var filter = Builders<BsonDocument>.Filter.Eq("dataLicense", "CC0-1");
         var docs = collection.Find(new BsonDocument()).Project(projection).ToList();
 
         foreach (var document in docs)
@@ -81,15 +81,25 @@ public class DatabaseDataHandler : MonoBehaviour
         return names;
     }
 
-    public void GetCWEData()
+    public List<BsonDocument> GetCVEDataBySubstringAndField(string searchCWE, string field)
     {
-        string searchCWE_ID = "CVE-2022-33915";
-        string searchCWE_Name = "Log4j";
 
         var client = new MongoClient(MongoDBConnectionString);
         var database = client.GetDatabase("SBOMDATA");
         var collection = database.GetCollection<BsonDocument>("CVE");
 
+        // filter using a regex to search for the substring
+        var filter = Builders<BsonDocument>.Filter.Regex(field, new BsonRegularExpression(searchCWE, "i"));
+
+        var docs = collection.Find(filter).ToList();
+
+        foreach (var document in docs)
+        {
+            Debug.Log(document.ToString());
+            document["_id"] = document["_id"].ToString();
+        }
+
+        return docs;
     }
 
 }

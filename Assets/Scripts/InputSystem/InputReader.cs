@@ -23,6 +23,7 @@ using static UnityEngine.Rendering.DebugUI;
 public class InputReader : MonoBehaviour
 {
     public GameObject BallPrefab;
+    public GameObject BoundaryBox;
 
     public List<DataObject> dataObjects = new List<DataObject>();
     public Dictionary<int, int> level_occurrences = new Dictionary<int, int>();
@@ -47,7 +48,7 @@ public class InputReader : MonoBehaviour
 
     public void CreateGraph(BsonDocument sbomElement, string graphType, bool showDuplicateNodes)
     {
-        Initilization();
+        Initialization();
         ReadFileAndCreateObjects(sbomElement);
 
         if(!showDuplicateNodes)
@@ -60,7 +61,7 @@ public class InputReader : MonoBehaviour
         CreateCategories();
     }
 
-    public void Initilization()
+    public void Initialization()
     {
         foreach (var obj in dataObjects)
         {
@@ -76,6 +77,8 @@ public class InputReader : MonoBehaviour
         {
             Destroy(categoryBall);
         }
+
+        Destroy(BoundaryBox);
 
         dataObjects.Clear();
         level_occurrences.Clear();
@@ -314,6 +317,12 @@ public class InputReader : MonoBehaviour
                 break;
         }
 
+        Vector3 position = new Vector3(Mathf.Sqrt(dataObjects.Count) * 2, 0, 0);
+        AdjustGraphPosition(position);
+
+        DrawLinesBetweenDataBalls();
+
+        MakeGraphBoundaries();
     }
 
     public void PositionAsRadialTidyTree()
@@ -331,15 +340,13 @@ public class InputReader : MonoBehaviour
                 {
                     int ballCount = level_occurrences[key] + previous_nr_balls;
                     float angle = (i * Mathf.PI * 2f) / ballCount;
-                    Vector3 v = new Vector3(Mathf.Cos(angle) * ((ballCount) + 1.5f * key), 6 + key * 2, Mathf.Sin(angle) * ((ballCount) + 1.5f * key * 1));
+                    Vector3 v = new Vector3(Mathf.Cos(angle) * ((ballCount) + 1.5f * key), 4 + key * 2, Mathf.Sin(angle) * ((ballCount) + 1.5f * key * 1));
                     dataObjects[i].DataBall.transform.position = v;
                     //Debug.Log(dataObjects[i].nr_children);
                 }
             }
             previous_nr_balls += level_occurrences[key];
         }
-
-        DrawLinesBetweenDataBalls();
     }
 
     public void PositionAsForceDirectedGraph()
@@ -381,8 +388,6 @@ public class InputReader : MonoBehaviour
             node.velocity = (node.velocity + force) * damping;
         }
         UpdatePositions();
-
-        DrawLinesBetweenDataBalls();
     }
 
     public void UpdatePositions()
@@ -396,16 +401,10 @@ public class InputReader : MonoBehaviour
         }
     }
 
-    public void PositionAsForceDirectedTree()
-    {
-
-    }
-
     public void PositionByCategoryAndLevel()
     {
 
         //Position by category and level ocurrence for every layer
-
         Dictionary<string, List<DataObject>> nodeOccurrences = new Dictionary<string, List<DataObject>>();
 
         foreach (DataObject dobj  in dataObjects)
@@ -441,7 +440,7 @@ public class InputReader : MonoBehaviour
                         {
                             int ballCount = obj.Value.Count;
                             float angle = (i * Mathf.PI * 2f) / ballCount;
-                            Vector3 v = new Vector3(Mathf.Cos(angle) * ((ballCount)) + alternate, 6 + layer_level * 2, Mathf.Sin(angle) * ((ballCount))) + new Vector3(Mathf.Sqrt(dataObjects.Count), 0, 0);
+                            Vector3 v = new Vector3(Mathf.Cos(angle) * ((ballCount)) + alternate, 4 + layer_level * 2, Mathf.Sin(angle) * ((ballCount)));
                             obj.Value[i].DataBall.transform.position = v;
                             alternate = alternate * (-1);
                         }
@@ -449,7 +448,7 @@ public class InputReader : MonoBehaviour
                         {
                             int ballCount = obj.Value.Count;
                             float angle = (i * Mathf.PI * 2f) / ballCount;
-                            Vector3 v = new Vector3(Mathf.Cos(angle) * ((ballCount)), 6 + layer_level * 2, Mathf.Sin(angle) * ((ballCount))) + new Vector3(Mathf.Sqrt(dataObjects.Count), 0, 0);
+                            Vector3 v = new Vector3(Mathf.Cos(angle) * ((ballCount)), 4 + layer_level * 2, Mathf.Sin(angle) * ((ballCount)));
                             obj.Value[i].DataBall.transform.position = v;
                         }
                         
@@ -458,8 +457,6 @@ public class InputReader : MonoBehaviour
                 }
             }
         }
-
-        DrawLinesBetweenDataBalls();
     }
 
     public void PositionOnSphere()
@@ -478,17 +475,22 @@ public class InputReader : MonoBehaviour
             float x = Mathf.Cos(theta) * radiusAtY;
             float z = Mathf.Sin(theta) * radiusAtY;
 
-            Vector3 position = (new Vector3(x, y, z) * sphereRadius) + new Vector3(sphereRadius * 1.5f, 0,0);
+            Vector3 position = (new Vector3(x, y, z) * sphereRadius);
 
 
             dataObjects[i].DataBall.transform.position = position;
         }
-
-        DrawLinesBetweenDataBalls();
-
     }
 
-    //Vorgehen: Zuerst benötigten platz für jedes layer berechnen => danach die Bälle positionieren
+    public void AdjustGraphPosition(Vector3 position)
+    {
+        foreach (var obj in dataObjects)
+        {
+            obj.DataBall.transform.position += position;
+        }
+    }
+
+
     public void DrawLinesBetweenDataBalls()
     {
 
@@ -532,6 +534,18 @@ public class InputReader : MonoBehaviour
             {
                 UnityEngine.Color c = UnityEngine.Random.ColorHSV();
 
+                // loop to lower chances for duplicate color
+                for (int i = 0; i < 10; i++)
+                {
+
+                    if (!colors.Values.Contains(c))
+                    {
+                        break;
+                    }
+
+                    c = UnityEngine.Random.ColorHSV();
+                }
+                
                 ball.DataBall.GetComponentInChildren<Renderer>().material.color = c;
                 colors.Add(ball.key.Substring(0, ball.key.Length - ball.suffix.Length), c);
             }
@@ -555,8 +569,10 @@ public class InputReader : MonoBehaviour
 
                 if(index < colors.Count)
                 {
-                    GameObject categoryPoint = Instantiate(BallPrefab, new Vector3(1 - x, 1 + (z * 0.5f), 2 + (z * 0.5f)), Quaternion.identity);
+
+                    GameObject categoryPoint = Instantiate(BallPrefab, new Vector3(1 - (x * 0.75f), 1 + (z * 0.5f) + (x%2) * 0.25f, 2 + (z * 0.5f) + (x%2) * 0.25f), Quaternion.identity);
                     TextMeshPro text = categoryPoint.GetComponentInChildren<TextMeshPro>();
+
 
                     text.text = colors.ElementAt(index).Key;
                     categoryPoint.GetComponentInChildren<Renderer>().material.color = colors.ElementAt(index).Value;
@@ -566,6 +582,32 @@ public class InputReader : MonoBehaviour
                     categoryBalls.Add(categoryPoint);
                 }
             }
+        }
+    }
+
+    public void MakeGraphBoundaries()
+    {
+        if(dataObjects.Count > 0)
+        {
+            Vector3 graphMin = dataObjects[0].DataBall.transform.position;
+            Vector3 graphMax = dataObjects[0].DataBall.transform.position;
+
+            foreach (DataObject point in dataObjects)
+            {
+                Vector3 pos = point.DataBall.transform.position;
+
+                // Update the min bounds
+                if (pos.x < graphMin.x) graphMin.x = pos.x;
+                if (pos.y < graphMin.y) graphMin.y = pos.y;
+                if (pos.z < graphMin.z) graphMin.z = pos.z;
+
+                // Update the max bounds
+                if (pos.x > graphMax.x) graphMax.x = pos.x;
+                if (pos.y > graphMax.y) graphMax.y = pos.y;
+                if (pos.z > graphMax.z) graphMax.z = pos.z;
+            }
+
+            BoundaryBox = ld.DrawCube(graphMin, graphMax);
         }
     }
 }

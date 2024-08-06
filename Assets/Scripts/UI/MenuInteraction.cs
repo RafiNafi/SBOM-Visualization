@@ -166,4 +166,14 @@ public class MenuInteraction : MonoBehaviour
 
         InitSliders();
     }
+
+    public void ShowCVENodes()
+    {
+        string searchCWE_ID = "CVE-2022-33915";
+        string searchCWE_Name = "Log4j";
+        string field = "containers.cna.affected.product";
+
+        List<BsonDocument> cveData = dbHandler.GetCVEDataBySubstringAndField(searchCWE_Name, "containers.cna.affected.product");
+        reader.CreateGraph(cveData[0], "Sphere", showDuplicateNodesToggle.isOn);
+    }
 }
