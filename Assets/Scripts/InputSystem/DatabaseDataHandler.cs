@@ -25,6 +25,7 @@ public class DatabaseDataHandler : MonoBehaviour
         
     }
 
+    /*
     public BsonDocument GetDatabaseData()
     {
         // Create client connection to MongoDB database
@@ -43,6 +44,7 @@ public class DatabaseDataHandler : MonoBehaviour
 
         return doc;
     }
+    */
 
     public BsonDocument GetDatabaseDataById(string id)
     {
@@ -78,4 +80,16 @@ public class DatabaseDataHandler : MonoBehaviour
 
         return names;
     }
+
+    public void GetCWEData()
+    {
+        string searchCWE_ID = "CVE-2022-33915";
+        string searchCWE_Name = "Log4j";
+
+        var client = new MongoClient(MongoDBConnectionString);
+        var database = client.GetDatabase("SBOMDATA");
+        var collection = database.GetCollection<BsonDocument>("CVE");
+
+    }
+
 }

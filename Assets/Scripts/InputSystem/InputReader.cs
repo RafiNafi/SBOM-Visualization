@@ -45,11 +45,16 @@ public class InputReader : MonoBehaviour
     }
 
 
-    public void CreateGraph(BsonDocument sbomElement, string graphType)
+    public void CreateGraph(BsonDocument sbomElement, string graphType, bool showDuplicateNodes)
     {
         Initilization();
         ReadFileAndCreateObjects(sbomElement);
-        FuseSameNodes(); //option to disable this
+
+        if(!showDuplicateNodes)
+        {
+            FuseSameNodes();
+        }
+
         PositionDataBalls(graphType);
         ColorDataBalls();
         CreateCategories();
@@ -436,7 +441,7 @@ public class InputReader : MonoBehaviour
                         {
                             int ballCount = obj.Value.Count;
                             float angle = (i * Mathf.PI * 2f) / ballCount;
-                            Vector3 v = new Vector3(Mathf.Cos(angle) * ((ballCount)) + alternate, 6 + layer_level * 2, Mathf.Sin(angle) * ((ballCount)));
+                            Vector3 v = new Vector3(Mathf.Cos(angle) * ((ballCount)) + alternate, 6 + layer_level * 2, Mathf.Sin(angle) * ((ballCount))) + new Vector3(Mathf.Sqrt(dataObjects.Count), 0, 0);
                             obj.Value[i].DataBall.transform.position = v;
                             alternate = alternate * (-1);
                         }
@@ -444,7 +449,7 @@ public class InputReader : MonoBehaviour
                         {
                             int ballCount = obj.Value.Count;
                             float angle = (i * Mathf.PI * 2f) / ballCount;
-                            Vector3 v = new Vector3(Mathf.Cos(angle) * ((ballCount)), 6 + layer_level * 2, Mathf.Sin(angle) * ((ballCount)));
+                            Vector3 v = new Vector3(Mathf.Cos(angle) * ((ballCount)), 6 + layer_level * 2, Mathf.Sin(angle) * ((ballCount))) + new Vector3(Mathf.Sqrt(dataObjects.Count), 0, 0);
                             obj.Value[i].DataBall.transform.position = v;
                         }
                         
@@ -516,12 +521,11 @@ public class InputReader : MonoBehaviour
     {
         foreach (DataObject ball in dataObjects)
         {
-            Debug.Log(ball.key.Substring(0, ball.key.Length - ball.suffix.Length));
+            //Debug.Log(ball.key.Substring(0, ball.key.Length - ball.suffix.Length));
 
             if (colors.ContainsKey(ball.key) || colors.ContainsKey(ball.key.Substring(0, ball.key.Length - ball.suffix.Length)))
             {
-                colors.TryGetValue(ball.key, out var color);
-
+                colors.TryGetValue(ball.key.Substring(0, ball.key.Length - ball.suffix.Length), out var color);
                 ball.DataBall.GetComponentInChildren<Renderer>().material.color = color;
             } 
             else
@@ -540,8 +544,8 @@ public class InputReader : MonoBehaviour
         float sqrt_val = Mathf.Sqrt(colors.Count);
         int rounded_val = Mathf.CeilToInt(sqrt_val);
 
-        Debug.Log(rounded_val);
-        Debug.Log(colors.Count);
+        //Debug.Log(rounded_val);
+        //Debug.Log(colors.Count);
 
         for (int x = 0; x < rounded_val; x++)
         {
@@ -551,7 +555,7 @@ public class InputReader : MonoBehaviour
 
                 if(index < colors.Count)
                 {
-                    GameObject categoryPoint = Instantiate(BallPrefab, new Vector3(1 - x, 1 + z * 0.75f, 1 + z * 0.75f), Quaternion.identity);
+                    GameObject categoryPoint = Instantiate(BallPrefab, new Vector3(1 - x, 1 + (z * 0.5f), 2 + (z * 0.5f)), Quaternion.identity);
                     TextMeshPro text = categoryPoint.GetComponentInChildren<TextMeshPro>();
 
                     text.text = colors.ElementAt(index).Key;

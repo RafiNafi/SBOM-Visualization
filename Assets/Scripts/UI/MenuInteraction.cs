@@ -6,6 +6,7 @@ using System.Runtime.InteropServices.ComTypes;
 using TMPro;
 using UnityEngine;
 using UnityEngine.EventSystems;
+using UnityEngine.UI;
 using UnityEngine.UIElements;
 
 public class MenuInteraction : MonoBehaviour
@@ -23,6 +24,9 @@ public class MenuInteraction : MonoBehaviour
     public TMP_InputField inputSearch;
 
     public TMP_Dropdown dropdown;
+
+    public UnityEngine.UI.Toggle showCWEToggle;
+    public UnityEngine.UI.Toggle showDuplicateNodesToggle;
 
     // Start is called before the first frame update
     void Start()
@@ -98,7 +102,7 @@ public class MenuInteraction : MonoBehaviour
     {
         
         BsonDocument bsonElements = dbHandler.GetDatabaseDataById(name);
-        reader.CreateGraph(bsonElements, dropdown.options[dropdown.value].text);
+        reader.CreateGraph(bsonElements, dropdown.options[dropdown.value].text, showDuplicateNodesToggle.isOn);
         Debug.Log(name);
         InitSliders();
 
