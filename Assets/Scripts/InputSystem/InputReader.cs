@@ -31,7 +31,7 @@ public class InputReader : MonoBehaviour
     public Dictionary<string, UnityEngine.Color> colors = new Dictionary<string, UnityEngine.Color>();
     public List<GameObject> categoryBalls = new List<GameObject>();
 
-    public DatabaseDataHandler dbHandler;
+    //public DatabaseDataHandler dbHandler;
 
     // Start is called before the first frame update
     void Start()
@@ -77,8 +77,6 @@ public class InputReader : MonoBehaviour
         {
             Destroy(categoryBall);
         }
-
-        Destroy(BoundaryBox);
 
         dataObjects.Clear();
         level_occurrences.Clear();
@@ -410,15 +408,15 @@ public class InputReader : MonoBehaviour
         foreach (DataObject dobj  in dataObjects)
         {
 
-            if (nodeOccurrences.ContainsKey(dobj.key))
+            if (nodeOccurrences.ContainsKey(dobj.key) || nodeOccurrences.ContainsKey(dobj.key.Substring(0, dobj.key.Length - dobj.suffix.Length)))
             {
-                nodeOccurrences[dobj.key].Add(dobj);
+                nodeOccurrences[dobj.key.Substring(0, dobj.key.Length - dobj.suffix.Length)].Add(dobj);
             }
             else
             {
                 List<DataObject> list = new List<DataObject>();
                 list.Add(dobj);
-                nodeOccurrences.Add(dobj.key, list);
+                nodeOccurrences.Add(dobj.key.Substring(0, dobj.key.Length - dobj.suffix.Length), list);
             }
         }
 
@@ -432,23 +430,31 @@ public class InputReader : MonoBehaviour
 
                 if (key == obj.Value[0].level)
                 {
-                    layer_level++;
+                    layer_level += 2;
 
                     for(var i = 0; i < obj.Value.Count; i++)
                     {
-                        if(obj.Value.Count < 2)
+                        float radius = 1;
+
+                        if (Mathf.Sin(Mathf.PI / obj.Value.Count) > 0)
+                        {
+                            radius = 0.75f / Mathf.Sin(Mathf.PI / obj.Value.Count);
+                        }
+
+                        if (obj.Value.Count < 2)
                         {
                             int ballCount = obj.Value.Count;
                             float angle = (i * Mathf.PI * 2f) / ballCount;
-                            Vector3 v = new Vector3(Mathf.Cos(angle) * ((ballCount)) + alternate, 4 + layer_level * 2, Mathf.Sin(angle) * ((ballCount)));
+                            Vector3 v = new Vector3(Mathf.Cos(angle) * radius + alternate, 4 + layer_level, Mathf.Sin(angle) * radius);
                             obj.Value[i].DataBall.transform.position = v;
+
                             alternate = alternate * (-1);
                         }
                         else
                         {
                             int ballCount = obj.Value.Count;
                             float angle = (i * Mathf.PI * 2f) / ballCount;
-                            Vector3 v = new Vector3(Mathf.Cos(angle) * ((ballCount)), 4 + layer_level * 2, Mathf.Sin(angle) * ((ballCount)));
+                            Vector3 v = new Vector3(Mathf.Cos(angle) * radius, 4 + layer_level, Mathf.Sin(angle) * radius);
                             obj.Value[i].DataBall.transform.position = v;
                         }
                         
@@ -587,7 +593,9 @@ public class InputReader : MonoBehaviour
 
     public void MakeGraphBoundaries()
     {
-        if(dataObjects.Count > 0)
+        Destroy(BoundaryBox);
+
+        if (dataObjects.Count > 0)
         {
             Vector3 graphMin = dataObjects[0].DataBall.transform.position;
             Vector3 graphMax = dataObjects[0].DataBall.transform.position;
@@ -607,7 +615,7 @@ public class InputReader : MonoBehaviour
                 if (pos.z > graphMax.z) graphMax.z = pos.z;
             }
 
-            BoundaryBox = ld.DrawCube(graphMin, graphMax);
+            BoundaryBox = ld.DrawCube(graphMin + new Vector3(-1,-1,-1), graphMax + new Vector3(1, 1, 1));
         }
     }
 }
