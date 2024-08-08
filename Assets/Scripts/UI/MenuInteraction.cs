@@ -11,7 +11,6 @@ using UnityEngine.UIElements;
 
 public class MenuInteraction : MonoBehaviour
 {
-    public InputReader reader;
 
     public DatabaseDataHandler dbHandler;
 
@@ -28,6 +27,11 @@ public class MenuInteraction : MonoBehaviour
     public UnityEngine.UI.Toggle showCWEToggle;
     public UnityEngine.UI.Toggle showDuplicateNodesToggle;
 
+    public List<GraphReader> cveList = new List<GraphReader>();
+    public List<GraphReader> sbomList = new List<GraphReader>();
+
+    public GameObject BallPrefab;
+
     // Start is called before the first frame update
     void Start()
     {
@@ -42,13 +46,8 @@ public class MenuInteraction : MonoBehaviour
 
     public void InitSliders()
     {
-        int levelCap = 0;
 
-        levelCap = reader.level_occurrences.Count;
-
-        sliderText.text = "Show Layers: " + levelCap;
-        sliderLevel.maxValue = levelCap;
-        sliderLevel.value = levelCap;
+        determineMaxLevel();
 
         sliderLevel.onValueChanged.RemoveAllListeners();
 
@@ -56,28 +55,49 @@ public class MenuInteraction : MonoBehaviour
         {
             sliderText.text = "Show Layers: " + y.ToString();
 
-            foreach (DataObject ball in reader.dataObjects)
+            foreach (GraphReader graph in sbomList)
             {
+                foreach (DataObject ball in graph.dataObjects)
+                {
 
-                if (ball.level + 1 > y)
-                {
-                    
-                    ball.DataBall.SetActive(false);
-                    if(ball.relationship_line_parent.Count > 0)
+                    if (ball.level + 1 > y)
                     {
-                        ball.relationship_line_parent.ForEach(x => { x.SetActive(false); });
+
+                        ball.DataBall.SetActive(false);
+                        if (ball.relationship_line_parent.Count > 0)
+                        {
+                            ball.relationship_line_parent.ForEach(x => { x.SetActive(false); });
+                        }
                     }
-                }
-                else
-                {
-                    ball.DataBall.SetActive(true);
-                    if (ball.relationship_line_parent.Count > 0)
+                    else
                     {
-                        ball.relationship_line_parent.ForEach(x => { x.SetActive(true); });
+                        ball.DataBall.SetActive(true);
+                        if (ball.relationship_line_parent.Count > 0)
+                        {
+                            ball.relationship_line_parent.ForEach(x => { x.SetActive(true); });
+                        }
                     }
                 }
             }
         });
+    }
+
+    public void determineMaxLevel()
+    {
+        int maxLevel = 0;
+
+        foreach (GraphReader graph in sbomList)
+        {
+            if (maxLevel < graph.level_occurrences.Count)
+            {
+                maxLevel = graph.level_occurrences.Count;
+            }
+        }
+        Debug.Log(maxLevel);
+
+        sliderText.text = "Show Layers: " + maxLevel;
+        sliderLevel.maxValue = maxLevel;
+        sliderLevel.value = maxLevel;
     }
 
     public void AddScrollviewContent()
@@ -102,10 +122,27 @@ public class MenuInteraction : MonoBehaviour
     {
         
         BsonDocument bsonElements = dbHandler.GetDatabaseDataById(name);
-        reader.CreateGraph(bsonElements, dropdown.options[dropdown.value].text, showDuplicateNodesToggle.isOn);
-        Debug.Log(name);
-        InitSliders();
 
+        //if graph exists already then delete it
+        foreach (GraphReader graph in sbomList)
+        {
+            if (graph.dbid == name)
+            {
+                sbomList.Remove(graph);
+                graph.Initialization();
+                determineMaxLevel();
+                //Debug.Log("REMOVE: " + graph.dbid);
+                return;
+            }
+        }
+
+        //else create new graph
+        GraphReader newGraph = new GraphReader();
+        newGraph.BallPrefab = BallPrefab;
+        newGraph.CreateGraph(bsonElements, dropdown.options[dropdown.value].text, showDuplicateNodesToggle.isOn);
+        newGraph.dbid = name;
+        sbomList.Add(newGraph);
+        InitSliders();
     }
 
 
@@ -118,29 +155,31 @@ public class MenuInteraction : MonoBehaviour
     {
         string text = inputSearch.text;
 
-        if(text != null && text != "")
+        foreach (GraphReader graph in sbomList)
         {
-            foreach (DataObject obj in reader.dataObjects)
+            if (text != null && text != "")
             {
-                if (!obj.key.Contains(text) && !obj.value.Contains(text))
+                foreach (DataObject obj in graph.dataObjects)
                 {
-                    ChangeNodeTransparency(obj, 0.2f, 0.2f);
+                    if (!obj.key.Contains(text) && !obj.value.Contains(text))
+                    {
+                        ChangeNodeTransparency(obj, 0.2f, 0.2f);
 
+                    }
+                    else
+                    {
+                        ChangeNodeTransparency(obj, 1f, 0.9f);
+                    }
                 }
-                else
+            }
+            else
+            {
+                foreach (DataObject obj in graph.dataObjects)
                 {
                     ChangeNodeTransparency(obj, 1f, 0.9f);
                 }
             }
         }
-        else
-        {
-            foreach (DataObject obj in reader.dataObjects)
-            {
-                ChangeNodeTransparency(obj, 1f, 0.9f);
-            }
-        }
-
     }
 
     public void ChangeNodeTransparency(DataObject obj, float valueBall, float valueLines) 
@@ -162,7 +201,10 @@ public class MenuInteraction : MonoBehaviour
     {
         Debug.Log(dropdown.options[dropdown.value].text);
 
-        reader.PositionDataBalls(dropdown.options[dropdown.value].text);
+        foreach (GraphReader graph in sbomList)
+        {
+            graph.PositionDataBalls(dropdown.options[dropdown.value].text);
+        }
 
         InitSliders();
     }
@@ -174,6 +216,13 @@ public class MenuInteraction : MonoBehaviour
         string field = "containers.cna.affected.product";
 
         List<BsonDocument> cveData = dbHandler.GetCVEDataBySubstringAndField(searchCWE_Name, field);
-        reader.CreateGraph(cveData[0], "Sphere", showDuplicateNodesToggle.isOn);
+
+        foreach (BsonDocument cve in cveData)
+        {
+            GraphReader newGraph = new GraphReader();
+            newGraph.BallPrefab = BallPrefab;
+            newGraph.CreateGraph(cve, "Sphere", showDuplicateNodesToggle.isOn);
+            cveList.Add(newGraph);
+        }
     }
 }

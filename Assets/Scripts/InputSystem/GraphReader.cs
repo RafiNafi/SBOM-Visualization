@@ -20,31 +20,18 @@ using static Unity.Burst.Intrinsics.X86.Avx;
 using static UnityEngine.Rendering.DebugUI;
 
 
-public class InputReader : MonoBehaviour
+public class GraphReader
 {
     public GameObject BallPrefab;
     public GameObject BoundaryBox;
+
+    public string dbid;
 
     public List<DataObject> dataObjects = new List<DataObject>();
     public Dictionary<int, int> level_occurrences = new Dictionary<int, int>();
     public LineDrawer ld;
     public Dictionary<string, UnityEngine.Color> colors = new Dictionary<string, UnityEngine.Color>();
     public List<GameObject> categoryBalls = new List<GameObject>();
-
-    //public DatabaseDataHandler dbHandler;
-
-    // Start is called before the first frame update
-    void Start()
-    {
-
-    }
-
-    // Update is called once per frame
-    void Update()
-    {
-
-    }
-
 
     public void CreateGraph(BsonDocument sbomElement, string graphType, bool showDuplicateNodes)
     {
@@ -65,17 +52,22 @@ public class InputReader : MonoBehaviour
     {
         foreach (var obj in dataObjects)
         {
-            Destroy(obj.DataBall);
+            MonoBehaviour.Destroy(obj.DataBall);
 
             foreach(var parent_line in obj.relationship_line_parent)
             {
-                Destroy(parent_line);
+                MonoBehaviour.Destroy(parent_line);
             }
         }
 
         foreach (var categoryBall in categoryBalls)
         {
-            Destroy(categoryBall);
+            MonoBehaviour.Destroy(categoryBall);
+        }
+
+        if (BoundaryBox != null)
+        {
+            MonoBehaviour.Destroy(BoundaryBox);
         }
 
         dataObjects.Clear();
@@ -103,7 +95,7 @@ public class InputReader : MonoBehaviour
 
     public DataObject CreateDataObjectWithBall(int level, string key, string value, DataObject parent)
     {
-        GameObject dataPoint = Instantiate(BallPrefab, new Vector3(1, 1, 1), Quaternion.identity);
+        GameObject dataPoint = MonoBehaviour.Instantiate(BallPrefab, new Vector3(1, 1, 1), Quaternion.identity);
         TextMeshPro text = dataPoint.GetComponentInChildren<TextMeshPro>();
 
         if(value != "")
@@ -268,7 +260,7 @@ public class InputReader : MonoBehaviour
 
                 item.Value.ForEach(obj => {
                     level_occurrences[obj.level]--;
-                    Destroy(obj.DataBall);
+                    MonoBehaviour.Destroy(obj.DataBall);
                     obj.parent.Clear();
                     dataObjects.Remove(obj);
                     });
@@ -503,7 +495,7 @@ public class InputReader : MonoBehaviour
         foreach (DataObject point in dataObjects)
         {
             point.relationship_line_parent.ForEach(line => {
-                Destroy(line);
+                MonoBehaviour.Destroy(line);
             });
             point.relationship_line_parent.Clear();
 
@@ -576,7 +568,7 @@ public class InputReader : MonoBehaviour
                 if(index < colors.Count)
                 {
 
-                    GameObject categoryPoint = Instantiate(BallPrefab, new Vector3(1 - (x * 0.75f), 1 + (z * 0.5f) + (x%2) * 0.25f, 2 + (z * 0.5f) + (x%2) * 0.25f), Quaternion.identity);
+                    GameObject categoryPoint = MonoBehaviour.Instantiate(BallPrefab, new Vector3(1 - (x * 0.75f), 1 + (z * 0.5f) + (x%2) * 0.25f, 2 + (z * 0.5f) + (x%2) * 0.25f), Quaternion.identity);
                     TextMeshPro text = categoryPoint.GetComponentInChildren<TextMeshPro>();
 
 
@@ -593,7 +585,10 @@ public class InputReader : MonoBehaviour
 
     public void MakeGraphBoundaries()
     {
-        Destroy(BoundaryBox);
+        if(BoundaryBox != null)
+        {
+            MonoBehaviour.Destroy(BoundaryBox);
+        }
 
         if (dataObjects.Count > 0)
         {

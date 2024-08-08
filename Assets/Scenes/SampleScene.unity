@@ -8513,53 +8513,6 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 641893117}
   m_CullTransparentMesh: 1
---- !u!1 &644191578
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 644191580}
-  - component: {fileID: 644191581}
-  m_Layer: 0
-  m_Name: InputReader
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!4 &644191580
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 644191578}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 1.7426729, y: 3.9840195, z: -0.4356284}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 0}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &644191581
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 644191578}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 902cb7bfd8722b645991b2a791856ee2, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  BallPrefab: {fileID: 1803205423555025420, guid: a6347260e4310e949a0d987a2a0111c7, type: 3}
-  categoryBalls: []
-  dbHandler: {fileID: 1308332127}
 --- !u!1 &644749417
 GameObject:
   m_ObjectHideFlags: 0
@@ -13786,7 +13739,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8c4ba530ee100e449a7a841a5baa5cf0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  reader: {fileID: 644191581}
   dbHandler: {fileID: 1308332127}
   scrollViewContent: {fileID: 751649905}
   buttonTemplate: {fileID: 8455529649106972298, guid: a4edefd6a6c230d4484b6dd3d7160852, type: 3}
@@ -13796,6 +13748,7 @@ MonoBehaviour:
   dropdown: {fileID: 2092641398}
   showCWEToggle: {fileID: 2108844869}
   showDuplicateNodesToggle: {fileID: 1476677517}
+  BallPrefab: {fileID: 1803205423555025420, guid: a6347260e4310e949a0d987a2a0111c7, type: 3}
 --- !u!1 &1014711966
 GameObject:
   m_ObjectHideFlags: 0
@@ -20617,7 +20570,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: Other
+  m_text: Options
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
@@ -22735,7 +22688,7 @@ Light:
   m_BounceIntensity: 1
   m_ColorTemperature: 6570
   m_UseColorTemperature: 0
-  m_BoundingSphereOverride: {x: 0, y: 2.7917993e-37, z: 1.6759978e-38, w: 2.0485021e+29}
+  m_BoundingSphereOverride: {x: 7.03e-43, y: 1.3516219e-38, z: 7.03e-43, w: 0}
   m_UseBoundingSphereOverride: 0
   m_UseViewFrustumForShadowCasterCull: 1
   m_ShadowRadius: 0
@@ -29948,6 +29901,5 @@ SceneRoots:
   - {fileID: 1703568386}
   - {fileID: 558680336}
   - {fileID: 614284888}
-  - {fileID: 644191580}
   - {fileID: 1067823637}
   - {fileID: 107946090}
