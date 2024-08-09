@@ -1,9 +1,11 @@
+using DnsClient;
 using MongoDB.Bson;
 using System.Collections;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Runtime.InteropServices.ComTypes;
 using TMPro;
+using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
@@ -132,6 +134,7 @@ public class MenuInteraction : MonoBehaviour
                 graph.Initialization();
                 determineMaxLevel();
                 //Debug.Log("REMOVE: " + graph.dbid);
+                PositionAllGraphs();
                 return;
             }
         }
@@ -143,6 +146,7 @@ public class MenuInteraction : MonoBehaviour
         newGraph.dbid = name;
         sbomList.Add(newGraph);
         InitSliders();
+        PositionAllGraphs();
     }
 
 
@@ -204,9 +208,13 @@ public class MenuInteraction : MonoBehaviour
         foreach (GraphReader graph in sbomList)
         {
             graph.PositionDataBalls(dropdown.options[dropdown.value].text);
+
+            graph.offset = new Vector3(0,0,0);
         }
 
         InitSliders();
+        
+        PositionAllGraphs();
     }
 
     public void ShowCVENodes()
@@ -224,5 +232,64 @@ public class MenuInteraction : MonoBehaviour
             newGraph.CreateGraph(cve, "Sphere", showDuplicateNodesToggle.isOn);
             cveList.Add(newGraph);
         }
+    }
+
+    public void PositionAllGraphs()
+    {
+        /*
+        for (int i = 0; i < sbomList.Count; i++)
+        {
+            float radius = 1f;
+
+            if (Mathf.Sin(Mathf.PI / sbomList.Count) > 0)
+            {
+                radius = CalculateMaxCircleRadius() / Mathf.Sin(Mathf.PI / sbomList.Count);
+            }
+            int graphCount = sbomList.Count;
+            float angle = (i * Mathf.PI * 2f) / graphCount;
+            Vector3 move = new Vector3(Mathf.Cos(angle) * radius, 0, Mathf.Sin(angle) * radius);
+            sbomList[i].AdjustEntireGraphPosition(move);
+        }
+        */
+
+        float maxRadius = CalculateMaxCircleRadius();
+        //float countRadius = (sbomList.Count * maxRadius) / 2;
+        float previousValues = 0;
+
+        for (int i = 0; i < sbomList.Count; i++)
+        {
+
+            Vector3 move = new Vector3(maxRadius + (maxRadius/2), 0, previousValues);
+            sbomList[i].AdjustEntireGraphPosition(move - sbomList[i].offset);
+            sbomList[i].offset = move;
+            previousValues += GetGraphRadius(sbomList[i].BoundaryBox) + 10;
+        }
+        
+    }
+
+    public float CalculateMaxCircleRadius()
+    {
+        // Calculate a base radius that ensures no overlap
+        float maxRadius = 0f;
+
+        foreach (GraphReader obj in sbomList)
+        {
+            float radius = GetGraphRadius(obj.BoundaryBox);
+
+            if (radius > maxRadius)
+            {
+                maxRadius = radius; 
+            }
+        
+            Debug.Log(maxRadius);
+        }
+
+        return maxRadius;
+    }
+
+    public float GetGraphRadius(GameObject obj)
+    {
+        var bounds = obj.GetComponent<Renderer>().bounds;
+        return Mathf.Max(bounds.extents.x, bounds.extents.z);
     }
 }

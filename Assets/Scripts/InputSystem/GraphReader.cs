@@ -33,6 +33,7 @@ public class GraphReader
     public Dictionary<string, UnityEngine.Color> colors = new Dictionary<string, UnityEngine.Color>();
     public List<GameObject> categoryBalls = new List<GameObject>();
 
+    public Vector3 offset = new Vector3(0,0,0);
     public void CreateGraph(BsonDocument sbomElement, string graphType, bool showDuplicateNodes)
     {
         Initialization();
@@ -307,8 +308,8 @@ public class GraphReader
                 break;
         }
 
-        Vector3 position = new Vector3(Mathf.Sqrt(dataObjects.Count) * 2, 0, 0);
-        AdjustGraphPosition(position);
+        //Vector3 position = new Vector3(Mathf.Sqrt(dataObjects.Count) * 2, 0, 0);
+        //AdjustBallPosition(position);
 
         DrawLinesBetweenDataBalls();
 
@@ -437,7 +438,7 @@ public class GraphReader
                         {
                             int ballCount = obj.Value.Count;
                             float angle = (i * Mathf.PI * 2f) / ballCount;
-                            Vector3 v = new Vector3(Mathf.Cos(angle) * radius + alternate, 4 + layer_level, Mathf.Sin(angle) * radius);
+                            Vector3 v = new Vector3(Mathf.Cos(angle) * radius + alternate, 1 + layer_level, Mathf.Sin(angle) * radius);
                             obj.Value[i].DataBall.transform.position = v;
 
                             alternate = alternate * (-1);
@@ -446,7 +447,7 @@ public class GraphReader
                         {
                             int ballCount = obj.Value.Count;
                             float angle = (i * Mathf.PI * 2f) / ballCount;
-                            Vector3 v = new Vector3(Mathf.Cos(angle) * radius, 4 + layer_level, Mathf.Sin(angle) * radius);
+                            Vector3 v = new Vector3(Mathf.Cos(angle) * radius, 1 + layer_level, Mathf.Sin(angle) * radius);
                             obj.Value[i].DataBall.transform.position = v;
                         }
                         
@@ -480,12 +481,51 @@ public class GraphReader
         }
     }
 
-    public void AdjustGraphPosition(Vector3 position)
+    public void AdjustBallPosition(Vector3 position)
     {
         foreach (var obj in dataObjects)
         {
             obj.DataBall.transform.position += position;
         }
+    }
+
+    public void AdjustEntireGraphPosition(Vector3 position)
+    {
+        foreach (var obj in dataObjects)
+        {
+            // move data balls
+            obj.DataBall.transform.position += position;
+
+            // move lines
+            foreach (var line in obj.relationship_line_parent)
+            {
+                LineRenderer lineR = line.GetComponent<LineRenderer>();
+                int posCount = lineR.positionCount;
+                Vector3[] pos = new Vector3[posCount];
+                lineR.GetPositions(pos);
+
+                for (int i = 0; i < posCount; i++)
+                {
+                    pos[i] += position;
+                }
+                lineR.SetPositions(pos);
+            }
+        }
+
+
+        //move boundary box pos
+        LineRenderer cubeRenderer = BoundaryBox.GetComponent<LineRenderer>();
+
+        int positionCount = cubeRenderer.positionCount;
+        Vector3[] positions = new Vector3[positionCount];
+        cubeRenderer.GetPositions(positions);
+
+        for (int i = 0; i < positionCount; i++)
+        {
+            positions[i] += position;
+        }
+
+        cubeRenderer.SetPositions(positions);
     }
 
 
