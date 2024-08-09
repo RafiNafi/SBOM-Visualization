@@ -33,7 +33,9 @@ public class GraphReader
     public Dictionary<string, UnityEngine.Color> colors = new Dictionary<string, UnityEngine.Color>();
     public List<GameObject> categoryBalls = new List<GameObject>();
 
-    public Vector3 offset = new Vector3(0,0,0);
+    public Vector3 offset = new Vector3(0, 0, 0);
+    public Vector3 offsetCategories = new Vector3(0, 0, 0);
+
     public void CreateGraph(BsonDocument sbomElement, string graphType, bool showDuplicateNodes)
     {
         Initialization();
@@ -342,8 +344,8 @@ public class GraphReader
 
     public void PositionAsForceDirectedGraph()
     {
-        float attractionForce = 1.5f;
-        float repulsionForce = 1.0f;
+        float attractionForce = 0.5f;
+        float repulsionForce = 0.8f;
         float damping = 0.9f;
 
         foreach (DataObject node in dataObjects)
@@ -352,10 +354,9 @@ public class GraphReader
             node.DataBall.transform.position = UnityEngine.Random.insideUnitSphere * 10;
 
             /*
-            // Apply repulsive force from all nodes
+            // Apply repulsive force
             foreach (DataObject other in dataObjects)
             {
-
                 if (node != other)
                 {
                     Vector3 direction = node.DataBall.transform.position - other.DataBall.transform.position;
@@ -377,7 +378,10 @@ public class GraphReader
             }
 
             node.velocity = (node.velocity + force) * damping;
+
         }
+
+        //BoundaryBox.GetComponent<LineRenderer>().bounds.center;
         UpdatePositions();
     }
 
@@ -387,8 +391,8 @@ public class GraphReader
         {
             //node.DataBall.transform.position += (node.velocity * Time.deltaTime);
             node.DataBall.transform.position += node.velocity;
-            Vector3 vec = new Vector3(1f, 1f, 1f);
-            node.DataBall.transform.position = Vector3.Scale(node.DataBall.transform.position, vec);
+            //Vector3 vec = new Vector3(1f, 1f, 1f);
+            //node.DataBall.transform.position = Vector3.Scale(node.DataBall.transform.position, vec);
         }
     }
 

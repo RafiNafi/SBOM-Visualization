@@ -210,6 +210,16 @@ public class MenuInteraction : MonoBehaviour
             graph.PositionDataBalls(dropdown.options[dropdown.value].text);
 
             graph.offset = new Vector3(0,0,0);
+            graph.offsetCategories = new Vector3(0, 0, 0);
+
+            foreach (var obj in graph.categoryBalls)
+            {
+                Destroy(obj);
+            }
+
+            graph.categoryBalls.Clear();
+
+            graph.CreateCategories();
         }
 
         InitSliders();
@@ -252,8 +262,8 @@ public class MenuInteraction : MonoBehaviour
         }
         */
 
-        float maxRadius = CalculateMaxCircleRadius();
         //float countRadius = (sbomList.Count * maxRadius) / 2;
+        float maxRadius = CalculateMaxCircleRadius();
         float previousValues = 0;
 
         for (int i = 0; i < sbomList.Count; i++)
@@ -262,9 +272,29 @@ public class MenuInteraction : MonoBehaviour
             Vector3 move = new Vector3(maxRadius + (maxRadius/2), 0, previousValues);
             sbomList[i].AdjustEntireGraphPosition(move - sbomList[i].offset);
             sbomList[i].offset = move;
-            previousValues += GetGraphRadius(sbomList[i].BoundaryBox) + 10;
+
+            Vector3 adjustCategories = new Vector3((maxRadius + (maxRadius / 2) - (GetGraphRadius(sbomList[i].BoundaryBox))) - 2, 0, previousValues);
+            PositionCategoryBalls(sbomList[i], adjustCategories - sbomList[i].offsetCategories);
+            sbomList[i].offsetCategories = adjustCategories;
+
+            if(i+1 < sbomList.Count)
+            {
+                previousValues += GetGraphRadius(sbomList[i].BoundaryBox) + GetGraphRadius(sbomList[i + 1].BoundaryBox) + 5;
+            }
         }
         
+    }
+
+    public void PositionCategoryBalls(GraphReader g, Vector3 adjust)
+    {
+        foreach (var ball in g.categoryBalls)
+        {
+            if(ball != null)
+            {
+                ball.transform.position += adjust;
+            }
+
+        }
     }
 
     public float CalculateMaxCircleRadius()
