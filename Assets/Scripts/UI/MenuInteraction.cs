@@ -261,26 +261,37 @@ public class MenuInteraction : MonoBehaviour
             sbomList[i].AdjustEntireGraphPosition(move);
         }
         */
-
         //float countRadius = (sbomList.Count * maxRadius) / 2;
+
+
         float maxRadius = CalculateMaxCircleRadius();
         float previousValues = 0;
+        Vector3 edge = Vector3.zero;
 
         for (int i = 0; i < sbomList.Count; i++)
         {
+            float radius = GetGraphRadiusX(sbomList[i].BoundaryBox);
 
-            Vector3 move = new Vector3(maxRadius + (maxRadius/2), 0, previousValues);
+            Vector3 move = new Vector3(maxRadius + (maxRadius / 2), 0, edge.z);
             sbomList[i].AdjustEntireGraphPosition(move - sbomList[i].offset);
             sbomList[i].offset = move;
 
-            Vector3 adjustCategories = new Vector3((maxRadius + (maxRadius / 2) - (GetGraphRadius(sbomList[i].BoundaryBox))) - 2, 0, previousValues);
-            PositionCategoryBalls(sbomList[i], adjustCategories - sbomList[i].offsetCategories);
-            sbomList[i].offsetCategories = adjustCategories;
 
-            if(i+1 < sbomList.Count)
+            edge = new Vector3(sbomList[i].BoundaryBox.GetComponent<Renderer>().bounds.min.x, 0, sbomList[i].BoundaryBox.GetComponent<Renderer>().bounds.max.z);
+
+            if (i - 1 >= 0)
             {
-                previousValues += GetGraphRadius(sbomList[i].BoundaryBox) + GetGraphRadius(sbomList[i + 1].BoundaryBox) + 5;
+                float newZ = sbomList[i-1].BoundaryBox.GetComponent<Renderer>().bounds.max.z - sbomList[i].BoundaryBox.GetComponent<Renderer>().bounds.min.z;
+                sbomList[i].AdjustEntireGraphPosition(new Vector3(0, 0, newZ + 5));
+                sbomList[i].offset += new Vector3(0,0,newZ + 5);
+
             }
+
+            Vector3 adjustCategoriesEdge = new Vector3(sbomList[i].BoundaryBox.GetComponent<Renderer>().bounds.min.x - 2, 0, sbomList[i].BoundaryBox.GetComponent<Renderer>().bounds.min.z);
+
+            PositionCategoryBalls(sbomList[i], adjustCategoriesEdge - sbomList[i].offsetCategories);
+            sbomList[i].offsetCategories = adjustCategoriesEdge;
+
         }
         
     }
@@ -304,7 +315,7 @@ public class MenuInteraction : MonoBehaviour
 
         foreach (GraphReader obj in sbomList)
         {
-            float radius = GetGraphRadius(obj.BoundaryBox);
+            float radius = GetGraphRadiusX(obj.BoundaryBox);
 
             if (radius > maxRadius)
             {
@@ -321,5 +332,17 @@ public class MenuInteraction : MonoBehaviour
     {
         var bounds = obj.GetComponent<Renderer>().bounds;
         return Mathf.Max(bounds.extents.x, bounds.extents.z);
+    }
+
+    public float GetGraphRadiusX(GameObject obj)
+    {
+        var bounds = obj.GetComponent<Renderer>().bounds;
+        return bounds.extents.x;
+    }
+
+    public float GetGraphRadiusZ(GameObject obj)
+    {
+        var bounds = obj.GetComponent<Renderer>().bounds;
+        return bounds.extents.z;
     }
 }

@@ -35,6 +35,8 @@ public class GraphReader
 
     public Vector3 offset = new Vector3(0, 0, 0);
     public Vector3 offsetCategories = new Vector3(0, 0, 0);
+    public Vector3 graphMin = Vector3.zero;
+    public Vector3 graphMax = Vector3.zero;
 
     public void CreateGraph(BsonDocument sbomElement, string graphType, bool showDuplicateNodes)
     {
@@ -636,8 +638,8 @@ public class GraphReader
 
         if (dataObjects.Count > 0)
         {
-            Vector3 graphMin = dataObjects[0].DataBall.transform.position;
-            Vector3 graphMax = dataObjects[0].DataBall.transform.position;
+            graphMin = dataObjects[0].DataBall.transform.position;
+            graphMax = dataObjects[0].DataBall.transform.position;
 
             foreach (DataObject point in dataObjects)
             {
