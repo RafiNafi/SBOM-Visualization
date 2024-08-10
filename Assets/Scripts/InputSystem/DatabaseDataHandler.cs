@@ -3,8 +3,8 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using MongoDB.Bson;
-using MongoDB.Bson.Serialization.Attributes;
-using MongoDB.Driver;
+//using MongoDB.Bson.Serialization.Attributes;
+//using MongoDB.Driver;
 using System.Threading.Tasks;
 using Unity.VisualScripting;
 
@@ -45,9 +45,10 @@ public class DatabaseDataHandler : MonoBehaviour
         return doc;
     }
     */
-
+    
     public BsonDocument GetDatabaseDataById(string id)
     {
+        /*
         var client = new MongoClient(MongoDBConnectionString);
         var database = client.GetDatabase("SBOMDATA");
         var collection = database.GetCollection<BsonDocument>("SBOMDATA");
@@ -59,10 +60,13 @@ public class DatabaseDataHandler : MonoBehaviour
         doc["_id"] = doc["_id"].ToString();
 
         return doc;
+        */
+        return new BsonDocument();
     }
 
     public List<string> GetOnlyAllDocumentNames()
     {
+        /*
         List<string> names = new List<string>();
 
         var client = new MongoClient(MongoDBConnectionString);
@@ -77,13 +81,15 @@ public class DatabaseDataHandler : MonoBehaviour
         {
             names.Add(document["_id"].ToString());
         }
-
+        
         return names;
+        */
+        return new List<string>();
     }
 
     public List<BsonDocument> GetCVEDataBySubstringAndField(string searchCWE, string field)
     {
-
+        /*
         var client = new MongoClient(MongoDBConnectionString);
         var database = client.GetDatabase("SBOMDATA");
         var collection = database.GetCollection<BsonDocument>("CVE");
@@ -100,6 +106,8 @@ public class DatabaseDataHandler : MonoBehaviour
         }
 
         return docs;
+        */
+        return new List<BsonDocument>();
     }
-
+    
 }

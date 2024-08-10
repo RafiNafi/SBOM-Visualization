@@ -104,6 +104,7 @@ public class MenuInteraction : MonoBehaviour
 
     public void AddScrollviewContent()
     {
+        
         List<string> list = dbHandler.GetOnlyAllDocumentNames();
 
 
@@ -117,7 +118,7 @@ public class MenuInteraction : MonoBehaviour
             
             btn.GetComponent<UnityEngine.UI.Button>().onClick.AddListener(()=>SelectSBOM(text.text));
         }
-
+        
     }
 
     public void SelectSBOM(string name)
@@ -147,6 +148,7 @@ public class MenuInteraction : MonoBehaviour
         sbomList.Add(newGraph);
         InitSliders();
         PositionAllGraphs();
+        
     }
 
 
@@ -229,6 +231,7 @@ public class MenuInteraction : MonoBehaviour
 
     public void ShowCVENodes()
     {
+        
         string searchCWE_ID = "CVE-2022-33915";
         string searchCWE_Name = "Log4j";
         string field = "containers.cna.affected.product";
@@ -242,6 +245,7 @@ public class MenuInteraction : MonoBehaviour
             newGraph.CreateGraph(cve, "Sphere", showDuplicateNodesToggle.isOn);
             cveList.Add(newGraph);
         }
+        
     }
 
     public void PositionAllGraphs()
