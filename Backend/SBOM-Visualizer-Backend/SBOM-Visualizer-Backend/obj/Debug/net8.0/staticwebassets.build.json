@@ -1,0 +1,11 @@
+{
+  "Version": 1,
+  "Hash": "buNyS8vy7iTYl6qmF2MAhDeUi3t0uyB3cdsm8Hm9jFI=",
+  "Source": "SBOM-Visualizer-Backend",
+  "BasePath": "_content/SBOM-Visualizer-Backend",
+  "Mode": "Default",
+  "ManifestType": "Build",
+  "ReferencedProjectsConfiguration": [],
+  "DiscoveryPatterns": [],
+  "Assets": []
+}

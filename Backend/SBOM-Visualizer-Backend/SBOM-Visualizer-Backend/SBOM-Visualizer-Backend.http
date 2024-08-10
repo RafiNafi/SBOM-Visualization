@@ -1,0 +1,6 @@
+@SBOM_Visualizer_Backend_HostAddress = http://localhost:5233
+
+GET {{SBOM_Visualizer_Backend_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

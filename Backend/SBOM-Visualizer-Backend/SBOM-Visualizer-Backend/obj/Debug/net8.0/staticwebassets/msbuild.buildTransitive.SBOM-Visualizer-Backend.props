@@ -1,0 +1,3 @@
+﻿<Project>
+  <Import Project="..\buildMultiTargeting\SBOM-Visualizer-Backend.props" />
+</Project>

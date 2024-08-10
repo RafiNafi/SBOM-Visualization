@@ -6,6 +6,7 @@ using MongoDB.Bson;
 using MongoDB.Driver;
 using System.Threading.Tasks;
 using Unity.VisualScripting;
+using System.Net.Http;
 
 public class DatabaseDataHandler : MonoBehaviour
 {
@@ -23,31 +24,12 @@ public class DatabaseDataHandler : MonoBehaviour
     {
         
     }
-
-    /*
-    public BsonDocument GetDatabaseData()
-    {
-        // Create client connection to MongoDB database
-        var client = new MongoClient(MongoDBConnectionString);
-        var database = client.GetDatabase("SBOMDATA");
-        var collection = database.GetCollection<BsonDocument>("SBOMDATA");
-
-        //var filter = Builders<BsonDocument>.Filter.Eq("SPDXID", "SPDXRef-DOCUMENT"); // big example
-        var filter = Builders<BsonDocument>.Filter.Eq("dataLicense", "CC0-1"); // small example
-        
-        var doc = collection.Find(filter).First();
-
-
-        doc["_id"] = doc["_id"].ToString();
-        //Debug.Log(doc.ToString());
-
-        return doc;
-    }
-    */
     
     public BsonDocument GetDatabaseDataById(string id)
     {
-        
+
+        getData(id);
+
         var client = new MongoClient(MongoDBConnectionString);
         var database = client.GetDatabase("SBOMDATA");
         var collection = database.GetCollection<BsonDocument>("SBOMDATA");
@@ -62,6 +44,36 @@ public class DatabaseDataHandler : MonoBehaviour
         
         //return new BsonDocument();
     }
+
+    public async void getData(string id)
+    {
+        // Create an instance of HttpClient
+        using (HttpClient client = new HttpClient())
+        {
+            // Define the base address of the API
+            client.BaseAddress = new Uri("https://localhost:7204");
+
+            // Example: Sending a GET request to the endpoint with parameters in the query string
+            string endpoint = "/api/DB/" + id + "/";
+
+            // Send the GET request
+            HttpResponseMessage response = await client.GetAsync(endpoint);
+
+            // Ensure the request was successful
+            if (response.IsSuccessStatusCode)
+            {
+                // Read the response content as a string
+                string responseData = await response.Content.ReadAsStringAsync();
+                Debug.Log("Response received: " + responseData);
+            }
+            else
+            {
+                Debug.Log("Request failed with status code: " + response.StatusCode);
+            }
+            client.Dispose();
+        }
+    }
+
 
     public List<string> GetOnlyAllDocumentNames()
     {
