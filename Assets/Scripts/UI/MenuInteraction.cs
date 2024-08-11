@@ -11,6 +11,8 @@ using UnityEngine.EventSystems;
 using UnityEngine.UI;
 using UnityEngine.UIElements;
 using UnityEngine.Networking;
+using Microsoft.MixedReality.Toolkit.Experimental.UI;
+using System;
 public class MenuInteraction : MonoBehaviour
 {
 
@@ -22,7 +24,7 @@ public class MenuInteraction : MonoBehaviour
     public UnityEngine.UI.Slider sliderLevel;
     public TextMeshProUGUI sliderText;
 
-    public InputField inputSearch;
+    public TMP_InputField inputSearch;
 
     public TMP_Dropdown dropdown;
 
@@ -34,10 +36,15 @@ public class MenuInteraction : MonoBehaviour
 
     public GameObject BallPrefab;
 
+    public Canvas c;
+
+
     // Start is called before the first frame update
     void Start()
     {
         AddScrollviewContent();
+        SetupInputField();
+
     }
 
     // Update is called once per frame
@@ -45,6 +52,7 @@ public class MenuInteraction : MonoBehaviour
     {
 
     }
+
 
     public void InitSliders()
     {
@@ -156,13 +164,20 @@ public class MenuInteraction : MonoBehaviour
         PositionAllGraphs();
     }
 
+    public void SetupInputField()
+    {
+        inputSearch.onSelect.AddListener( x => OpenKeyboard());
+        NonNativeKeyboard.Instance.OnTextSubmitted += HightlightSearchedNode;
+    }
+
     public void OpenKeyboard()
     {
-        
+        NonNativeKeyboard.Instance.InputField = inputSearch;
+        NonNativeKeyboard.Instance.PresentKeyboard(); //inputSearch.text
 
     }
 
-    public void HightlightSearchedNode()
+    public void HightlightSearchedNode(object sender, EventArgs e)
     {
         string text = inputSearch.text;
 
@@ -356,5 +371,10 @@ public class MenuInteraction : MonoBehaviour
     {
         var bounds = obj.GetComponent<Renderer>().bounds;
         return bounds.extents.z;
+    }
+
+    void OnDestroy()
+    {
+        NonNativeKeyboard.Instance.OnTextSubmitted -= HightlightSearchedNode;
     }
 }
