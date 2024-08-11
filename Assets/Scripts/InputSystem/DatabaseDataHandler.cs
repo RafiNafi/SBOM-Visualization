@@ -7,12 +7,11 @@ using System.Threading.Tasks;
 using Unity.VisualScripting;
 using System.Net.Http;
 using Newtonsoft.Json;
-
+using UnityEngine.Networking;
 
 public class DatabaseDataHandler : MonoBehaviour
 {
 
-    //const string MongoDBConnectionString = "mongodb://localhost:27017"; //Localhost
     const string BackendConnectionString = "http://192.168.178.88:7204";
 
     // Start is called before the first frame update
@@ -27,9 +26,9 @@ public class DatabaseDataHandler : MonoBehaviour
         
     }
     
-    public async Task<string> GetDatabaseDataById(string id)
+    public IEnumerator GetDatabaseDataById(string id, System.Action<string, string> callback)
     {
-
+        /*
         string responseData = "";
         // Create an instance of HttpClient
         using (HttpClient client = new HttpClient())
@@ -51,13 +50,31 @@ public class DatabaseDataHandler : MonoBehaviour
             }
             client.Dispose();
         }
-
         return responseData;
+        */
+
+        using (UnityWebRequest webRequest = UnityWebRequest.Get(BackendConnectionString + "/api/DB/" + id + "/"))
+        {
+            yield return webRequest.SendWebRequest();
+
+            if (webRequest.result == UnityWebRequest.Result.ConnectionError)
+            {
+                Debug.Log(": Error: " + webRequest.error);
+                callback(null, null);
+            }
+            else
+            {
+                Debug.Log(": Received: " + webRequest.downloadHandler.text);
+                callback(id, webRequest.downloadHandler.text);
+            }
+        }
+
     }
 
 
-    public async Task<List<string>> GetOnlyAllDocumentNames()
+    public IEnumerator GetOnlyAllDocumentNames(System.Action<List<string>> callback)
     {
+        /*
         List<string> responseData = new List<string>();
 
         using (HttpClient client = new HttpClient())
@@ -82,11 +99,30 @@ public class DatabaseDataHandler : MonoBehaviour
         }
 
         return responseData;
+        */
+
+        using (UnityWebRequest webRequest = UnityWebRequest.Get(BackendConnectionString + "/api/DB/"))
+        {
+            yield return webRequest.SendWebRequest();
+
+            if (webRequest.result == UnityWebRequest.Result.ConnectionError)
+            {
+                Debug.Log(": Error: " + webRequest.error);
+                callback(null);
+            }
+            else
+            {
+                Debug.Log(": Received: " + webRequest.downloadHandler.text);
+                List<string> responseData = JsonConvert.DeserializeObject<List<string>>(webRequest.downloadHandler.text);
+                callback(responseData);
+            }
+        }
     }
 
 
-    public async Task<List<string>> GetCVEDataBySubstringAndField(string searchCWE, string field)
+    public IEnumerator GetCVEDataBySubstringAndField(string searchCWE, string field, System.Action<List<string>> callback)
     {
+        /*
         List<string> responseData = new List<string>();
 
         using (HttpClient client = new HttpClient())
@@ -112,6 +148,24 @@ public class DatabaseDataHandler : MonoBehaviour
         }
 
         return responseData;
+        */
+
+        using (UnityWebRequest webRequest = UnityWebRequest.Get(BackendConnectionString + "/api/DB/" + searchCWE + "/" + field + "/"))
+        {
+            yield return webRequest.SendWebRequest();
+
+            if (webRequest.result == UnityWebRequest.Result.ConnectionError)
+            {
+                Debug.Log(": Error: " + webRequest.error);
+                callback(null);
+            }
+            else
+            {
+                Debug.Log(": Received: " + webRequest.downloadHandler.text);
+                List<string> responseData = JsonConvert.DeserializeObject<List<string>>(webRequest.downloadHandler.text);
+                callback(responseData);
+            }
+        }
     }
 
 

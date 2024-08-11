@@ -10,7 +10,7 @@ using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
 using UnityEngine.UIElements;
-
+using UnityEngine.Networking;
 public class MenuInteraction : MonoBehaviour
 {
 
@@ -102,30 +102,36 @@ public class MenuInteraction : MonoBehaviour
         sliderLevel.value = maxLevel;
     }
 
-    public async void AddScrollviewContent()
+    public void AddScrollviewContent()
     {
         
-        List<string> list = await dbHandler.GetOnlyAllDocumentNames();
+        StartCoroutine(dbHandler.GetOnlyAllDocumentNames(AddScrollContent));
 
+    }
 
-        foreach(string name in list)
+    public void AddScrollContent(List<string> list)
+    {
+        foreach (string name in list)
         {
             GameObject btn = Instantiate(buttonTemplate, scrollViewContent.transform);
-            
+
             TextMeshProUGUI text = btn.GetComponentInChildren<TextMeshProUGUI>();
             text.text = name;
             text.fontSize = 7;
-            
-            btn.GetComponent<UnityEngine.UI.Button>().onClick.AddListener(()=>SelectSBOM(text.text));
+
+            btn.GetComponent<UnityEngine.UI.Button>().onClick.AddListener(() => SelectSBOM(text.text));
         }
-        
     }
 
-    public async void SelectSBOM(string name)
+    public void SelectSBOM(string name)
     {
         
-        string bsonElements = await dbHandler.GetDatabaseDataById(name);
+        StartCoroutine(dbHandler.GetDatabaseDataById(name, SBOMCreation));
 
+    }
+
+    public void SBOMCreation(string name, string bsonElements)
+    {
         //if graph exists already then delete it
         foreach (GraphReader graph in sbomList)
         {
@@ -134,7 +140,7 @@ public class MenuInteraction : MonoBehaviour
                 sbomList.Remove(graph);
                 graph.Initialization();
                 determineMaxLevel();
-                //Debug.Log("REMOVE: " + graph.dbid);
+                Debug.Log("REMOVE: " + graph.dbid);
                 PositionAllGraphs();
                 return;
             }
@@ -148,9 +154,7 @@ public class MenuInteraction : MonoBehaviour
         sbomList.Add(newGraph);
         InitSliders();
         PositionAllGraphs();
-        
     }
-
 
     public void OpenKeyboard()
     {
@@ -229,15 +233,19 @@ public class MenuInteraction : MonoBehaviour
         PositionAllGraphs();
     }
 
-    public async void ShowCVENodes()
+    public void ShowCVENodes()
     {
         
         string searchCWE_ID = "CVE-2022-33915";
         string searchCWE_Name = "Log4j";
         string field = "containers.cna.affected.product";
-        
-        List<string> cveData = await dbHandler.GetCVEDataBySubstringAndField(searchCWE_Name, field);
 
+        StartCoroutine(dbHandler.GetCVEDataBySubstringAndField(searchCWE_Name, field, ShowAllCVENodes));
+  
+    }
+
+    public void ShowAllCVENodes(List<string> cveData)
+    {
         foreach (string cve in cveData)
         {
             GraphReader newGraph = new GraphReader();
@@ -245,7 +253,6 @@ public class MenuInteraction : MonoBehaviour
             newGraph.CreateGraph(cve, "Sphere", showDuplicateNodesToggle.isOn);
             cveList.Add(newGraph);
         }
-        
     }
 
     public void PositionAllGraphs()
