@@ -28,7 +28,7 @@ namespace SBOM_Visualizer_Backend.Controllers
         }
 
         [HttpGet]
-        public List<string> GetOnlyAllDocumentNames()
+        public IActionResult GetOnlyAllDocumentNames()
         {
 
             List<string> names = new List<string>();
@@ -46,12 +46,13 @@ namespace SBOM_Visualizer_Backend.Controllers
                 names.Add(document["_id"].ToString());
             }
 
-            return names;
+            return Ok(names);
         }
 
         [HttpGet("{searchCVE}/{field}")]
-        public List<BsonDocument> GetCVEDataBySubstringAndField(string searchCVE, string field)
+        public IActionResult GetCVEDataBySubstringAndField(string searchCVE, string field)
         {
+            List<string> CVEList = new List<string>();
 
             var client = new MongoClient(MongoDBConnectionString);
             var database = client.GetDatabase("SBOMDATA");
@@ -66,9 +67,10 @@ namespace SBOM_Visualizer_Backend.Controllers
             {
                 //Debug.Log(document.ToString());
                 document["_id"] = document["_id"].ToString();
+                CVEList.Add(document.ToString());
             }
 
-            return docs;
+            return Ok(CVEList);
         }
 
     }

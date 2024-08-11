@@ -3,15 +3,17 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using MongoDB.Bson;
-using MongoDB.Driver;
 using System.Threading.Tasks;
 using Unity.VisualScripting;
 using System.Net.Http;
+using Newtonsoft.Json;
+
 
 public class DatabaseDataHandler : MonoBehaviour
 {
 
-    const string MongoDBConnectionString = "mongodb://localhost:27017"; //Localhost
+    //const string MongoDBConnectionString = "mongodb://localhost:27017"; //Localhost
+    const string BackendConnectionString = "http://192.168.178.88:7204";
 
     // Start is called before the first frame update
     void Start()
@@ -25,45 +27,22 @@ public class DatabaseDataHandler : MonoBehaviour
         
     }
     
-    public BsonDocument GetDatabaseDataById(string id)
+    public async Task<string> GetDatabaseDataById(string id)
     {
 
-        getData(id);
-
-        var client = new MongoClient(MongoDBConnectionString);
-        var database = client.GetDatabase("SBOMDATA");
-        var collection = database.GetCollection<BsonDocument>("SBOMDATA");
-
-        var filter = Builders<BsonDocument>.Filter.Eq("_id", ObjectId.Parse(id)); 
-
-        var doc = collection.Find(filter).First();
-
-        doc["_id"] = doc["_id"].ToString();
-
-        return doc;
-        
-        //return new BsonDocument();
-    }
-
-    public async void getData(string id)
-    {
+        string responseData = "";
         // Create an instance of HttpClient
         using (HttpClient client = new HttpClient())
         {
-            // Define the base address of the API
-            client.BaseAddress = new Uri("https://localhost:7204");
+            client.BaseAddress = new Uri(BackendConnectionString);
 
-            // Example: Sending a GET request to the endpoint with parameters in the query string
             string endpoint = "/api/DB/" + id + "/";
 
-            // Send the GET request
             HttpResponseMessage response = await client.GetAsync(endpoint);
 
-            // Ensure the request was successful
             if (response.IsSuccessStatusCode)
             {
-                // Read the response content as a string
-                string responseData = await response.Content.ReadAsStringAsync();
+                responseData = await response.Content.ReadAsStringAsync();
                 Debug.Log("Response received: " + responseData);
             }
             else
@@ -72,53 +51,68 @@ public class DatabaseDataHandler : MonoBehaviour
             }
             client.Dispose();
         }
+
+        return responseData;
     }
 
 
-    public List<string> GetOnlyAllDocumentNames()
+    public async Task<List<string>> GetOnlyAllDocumentNames()
     {
-        
-        List<string> names = new List<string>();
+        List<string> responseData = new List<string>();
 
-        var client = new MongoClient(MongoDBConnectionString);
-        var database = client.GetDatabase("SBOMDATA");
-        var collection = database.GetCollection<BsonDocument>("SBOMDATA");
-
-        var projection = Builders<BsonDocument>.Projection.Include("_id");
-        // var filter = Builders<BsonDocument>.Filter.Eq("dataLicense", "CC0-1");
-        var docs = collection.Find(new BsonDocument()).Project(projection).ToList();
-
-        foreach (var document in docs)
+        using (HttpClient client = new HttpClient())
         {
-            names.Add(document["_id"].ToString());
-        }
-        
-        return names;
-        
-        //return new List<string>();
-    }
+            client.BaseAddress = new Uri(BackendConnectionString);
 
-    public List<BsonDocument> GetCVEDataBySubstringAndField(string searchCWE, string field)
-    {
-        
-        var client = new MongoClient(MongoDBConnectionString);
-        var database = client.GetDatabase("SBOMDATA");
-        var collection = database.GetCollection<BsonDocument>("CVE");
+            string endpoint = "/api/DB/";
 
-        // filter using a regex to search for the substring
-        var filter = Builders<BsonDocument>.Filter.Regex(field, new BsonRegularExpression(searchCWE, "i"));
+            HttpResponseMessage response = await client.GetAsync(endpoint);
 
-        var docs = collection.Find(filter).ToList();
-
-        foreach (var document in docs)
-        {
-            Debug.Log(document.ToString());
-            document["_id"] = document["_id"].ToString();
+            if (response.IsSuccessStatusCode)
+            {
+                string responseString = await response.Content.ReadAsStringAsync();
+                responseData  = JsonConvert.DeserializeObject<List<string>>(responseString);
+                Debug.Log("Response received: " + responseData);
+            }
+            else
+            {
+                Debug.Log("Request failed with status code: " + response.StatusCode);
+            }
+            client.Dispose();
         }
 
-        return docs;
-        
-        //return new List<BsonDocument>();
+        return responseData;
     }
-    
+
+
+    public async Task<List<string>> GetCVEDataBySubstringAndField(string searchCWE, string field)
+    {
+        List<string> responseData = new List<string>();
+
+        using (HttpClient client = new HttpClient())
+        {
+            client.BaseAddress = new Uri(BackendConnectionString);
+
+            string endpoint = "/api/DB/" + searchCWE + "/" + field + "/";
+
+            HttpResponseMessage response = await client.GetAsync(endpoint);
+
+            if (response.IsSuccessStatusCode)
+            {
+                string responseString = await response.Content.ReadAsStringAsync();
+                responseData = JsonConvert.DeserializeObject<List<string>>(responseString);
+
+                Debug.Log("Response received: " + responseData);
+            }
+            else
+            {
+                Debug.Log("Request failed with status code: " + response.StatusCode);
+            }
+            client.Dispose();
+        }
+
+        return responseData;
+    }
+
+
 }

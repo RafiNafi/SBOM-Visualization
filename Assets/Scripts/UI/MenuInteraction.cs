@@ -102,10 +102,10 @@ public class MenuInteraction : MonoBehaviour
         sliderLevel.value = maxLevel;
     }
 
-    public void AddScrollviewContent()
+    public async void AddScrollviewContent()
     {
         
-        List<string> list = dbHandler.GetOnlyAllDocumentNames();
+        List<string> list = await dbHandler.GetOnlyAllDocumentNames();
 
 
         foreach(string name in list)
@@ -121,10 +121,10 @@ public class MenuInteraction : MonoBehaviour
         
     }
 
-    public void SelectSBOM(string name)
+    public async void SelectSBOM(string name)
     {
         
-        BsonDocument bsonElements = dbHandler.GetDatabaseDataById(name);
+        string bsonElements = await dbHandler.GetDatabaseDataById(name);
 
         //if graph exists already then delete it
         foreach (GraphReader graph in sbomList)
@@ -154,7 +154,7 @@ public class MenuInteraction : MonoBehaviour
 
     public void OpenKeyboard()
     {
-        
+        TouchScreenKeyboard.Open("");
     }
 
     public void HightlightSearchedNode()
@@ -229,16 +229,16 @@ public class MenuInteraction : MonoBehaviour
         PositionAllGraphs();
     }
 
-    public void ShowCVENodes()
+    public async void ShowCVENodes()
     {
         
         string searchCWE_ID = "CVE-2022-33915";
         string searchCWE_Name = "Log4j";
         string field = "containers.cna.affected.product";
+        
+        List<string> cveData = await dbHandler.GetCVEDataBySubstringAndField(searchCWE_Name, field);
 
-        List<BsonDocument> cveData = dbHandler.GetCVEDataBySubstringAndField(searchCWE_Name, field);
-
-        foreach (BsonDocument cve in cveData)
+        foreach (string cve in cveData)
         {
             GraphReader newGraph = new GraphReader();
             newGraph.BallPrefab = BallPrefab;

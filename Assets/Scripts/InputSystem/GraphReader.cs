@@ -34,7 +34,7 @@ public class GraphReader
     public Vector3 graphMin = Vector3.zero;
     public Vector3 graphMax = Vector3.zero;
 
-    public void CreateGraph(BsonDocument sbomElement, string graphType, bool showDuplicateNodes)
+    public void CreateGraph(string sbomElement, string graphType, bool showDuplicateNodes)
     {
         Initialization();
         ReadFileAndCreateObjects(sbomElement);
@@ -77,7 +77,7 @@ public class GraphReader
         categoryBalls.Clear();
     }
 
-    public void ReadFileAndCreateObjects(BsonDocument sbomElement)
+    public void ReadFileAndCreateObjects(string sbomElement)
     {
 
         dynamic jsonObj = JObject.Parse(sbomElement.ToString());
