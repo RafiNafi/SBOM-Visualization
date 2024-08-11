@@ -167,14 +167,15 @@ public class MenuInteraction : MonoBehaviour
     public void SetupInputField()
     {
         inputSearch.onSelect.AddListener( x => OpenKeyboard());
-        NonNativeKeyboard.Instance.OnTextSubmitted += HightlightSearchedNode;
+        
     }
 
     public void OpenKeyboard()
     {
         NonNativeKeyboard.Instance.InputField = inputSearch;
+        NonNativeKeyboard.Instance.OnTextSubmitted -= HightlightSearchedNode;
+        NonNativeKeyboard.Instance.OnTextSubmitted += HightlightSearchedNode;
         NonNativeKeyboard.Instance.PresentKeyboard(); //inputSearch.text
-
     }
 
     public void HightlightSearchedNode(object sender, EventArgs e)
@@ -373,8 +374,4 @@ public class MenuInteraction : MonoBehaviour
         return bounds.extents.z;
     }
 
-    void OnDestroy()
-    {
-        NonNativeKeyboard.Instance.OnTextSubmitted -= HightlightSearchedNode;
-    }
 }
