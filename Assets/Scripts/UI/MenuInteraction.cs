@@ -22,7 +22,7 @@ public class MenuInteraction : MonoBehaviour
     public UnityEngine.UI.Slider sliderLevel;
     public TextMeshProUGUI sliderText;
 
-    public TMP_InputField inputSearch;
+    public InputField inputSearch;
 
     public TMP_Dropdown dropdown;
 
@@ -43,7 +43,7 @@ public class MenuInteraction : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        
+
     }
 
     public void InitSliders()
@@ -158,7 +158,8 @@ public class MenuInteraction : MonoBehaviour
 
     public void OpenKeyboard()
     {
-        TouchScreenKeyboard.Open("");
+        
+
     }
 
     public void HightlightSearchedNode()
