@@ -255,9 +255,12 @@ public class GraphReader
                     //Check children of node
                     foreach(DataObject child in dataObjects)
                     {
-                        if (child.parent.Contains(obj) && !child.parent.Contains(fusedNode))
+                        if (child.parent.Contains(obj))
                         {
-                            child.parent.Add(fusedNode);
+                            if(!child.parent.Contains(fusedNode))
+                            {
+                                child.parent.Add(fusedNode);
+                            }
                             child.parent.Remove(obj);
                         }
                     }
@@ -275,14 +278,24 @@ public class GraphReader
                     level_occurrences[obj.level]--;
                     MonoBehaviour.Destroy(obj.DataBall);
                     obj.parent.Clear();
+                    obj.relationship_line_parent.ForEach(line => { MonoBehaviour.Destroy(line); });
+                    obj.relationship_line_parent.Clear();
                     dataObjects.Remove(obj);
-                    });
+                });
                 
             }
 
         }
         nodeOccurrences.Clear();
 
+        foreach (DataObject obj in dataObjects) 
+        {
+            Debug.Log("KEY:" + obj.key + " VALUE: " + obj.value);
+            foreach(DataObject parent in obj.parent)
+            {
+                Debug.Log("PARENT:" + parent.key);
+            }
+        }
     }
 
     public void ProcessLevelOccurence(int num)
