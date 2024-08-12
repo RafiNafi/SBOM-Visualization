@@ -149,7 +149,7 @@ public class MenuInteraction : MonoBehaviour
                 graph.Initialization();
                 determineMaxLevel();
                 Debug.Log("REMOVE: " + graph.dbid);
-                PositionAllGraphs();
+                PositionAllGraphs(sbomList);
                 return;
             }
         }
@@ -161,7 +161,7 @@ public class MenuInteraction : MonoBehaviour
         newGraph.dbid = name;
         sbomList.Add(newGraph);
         InitSliders();
-        PositionAllGraphs();
+        PositionAllGraphs(sbomList);
     }
 
     public void SetupInputField()
@@ -247,7 +247,7 @@ public class MenuInteraction : MonoBehaviour
 
         InitSliders();
         
-        PositionAllGraphs();
+        PositionAllGraphs(sbomList);
     }
 
     [System.Serializable]
@@ -259,7 +259,6 @@ public class MenuInteraction : MonoBehaviour
     public void ShowCVENodes()
     {
         
-        string searchCWE_ID = "CVE-2022-33915";
         string field = "cveMetadata.cveId";
         //string searchCWE_Name = "Log4j";
         //string field = "containers.cna.affected.product";
@@ -293,15 +292,41 @@ public class MenuInteraction : MonoBehaviour
             newGraph.CreateGraph(cve, "Sphere", showDuplicateNodesToggle.isOn);
             cveList.Add(newGraph);
         }
-        PositionCVEGraphs();
+
+        PositionAllGraphs(cveList);
+        ConnectCVEGraphs();
     }
 
-    public void PositionCVEGraphs()
+    public void ConnectCVEGraphs()
     {
+        foreach(GraphReader cveGraph in cveList)
+        {
+            foreach(DataObject cveDobj in cveGraph.dataObjects)
+            {
+                foreach (GraphReader sbomGraph in sbomList)
+                {
+                    foreach (DataObject sbomDobj in sbomGraph.dataObjects)
+                    {
 
+                        if(sbomDobj.key == cveDobj.value && sbomDobj.key != "ROOT")
+                        {
+                            cveGraph.ld = new LineDrawer(0.04f);
+                            List<Vector3> pointlist = new List<Vector3>();
+                            pointlist.Add(sbomDobj.DataBall.transform.position);
+                            pointlist.Add(cveDobj.DataBall.transform.position);
+
+                            GameObject line = cveGraph.ld.CreateLine(pointlist,true);
+                            cveDobj.relationship_line_parent.Add(line);
+                        }
+
+
+                    }
+                }
+            }
+        }
     }
 
-    public void PositionAllGraphs()
+    public void PositionAllGraphs(List<GraphReader> list)
     {
         /*
         for (int i = 0; i < sbomList.Count; i++)
@@ -320,34 +345,43 @@ public class MenuInteraction : MonoBehaviour
         */
         //float countRadius = (sbomList.Count * maxRadius) / 2;
 
+        int multiplier = 1;
+
+        if (list.Count > 0)
+        {
+            if (list[0].isCVE)
+            {
+                multiplier = -1;
+            }
+        }
 
         float maxRadius = CalculateMaxCircleRadius();
         float previousValues = 0;
         Vector3 edge = Vector3.zero;
 
-        for (int i = 0; i < sbomList.Count; i++)
+        for (int i = 0; i < list.Count; i++)
         {
-            float radius = GetGraphRadiusX(sbomList[i].BoundaryBox);
+            float radius = GetGraphRadiusX(list[i].BoundaryBox);
 
-            Vector3 move = new Vector3(maxRadius + (maxRadius / 2), 0, edge.z);
-            sbomList[i].AdjustEntireGraphPosition(move - sbomList[i].offset);
-            sbomList[i].offset = move;
+            Vector3 move = new Vector3(multiplier * maxRadius + (multiplier * maxRadius / 2), 0, edge.z);
+            list[i].AdjustEntireGraphPosition(move - list[i].offset);
+            list[i].offset = move;
 
 
-            edge = new Vector3(sbomList[i].BoundaryBox.GetComponent<Renderer>().bounds.min.x, 0, sbomList[i].BoundaryBox.GetComponent<Renderer>().bounds.max.z);
+            edge = new Vector3(list[i].BoundaryBox.GetComponent<Renderer>().bounds.min.x, 0, list[i].BoundaryBox.GetComponent<Renderer>().bounds.max.z);
 
             if (i - 1 >= 0)
             {
-                float newZ = sbomList[i-1].BoundaryBox.GetComponent<Renderer>().bounds.max.z - sbomList[i].BoundaryBox.GetComponent<Renderer>().bounds.min.z;
-                sbomList[i].AdjustEntireGraphPosition(new Vector3(0, 0, newZ + 5));
-                sbomList[i].offset += new Vector3(0,0,newZ + 5);
+                float newZ = list[i-1].BoundaryBox.GetComponent<Renderer>().bounds.max.z - list[i].BoundaryBox.GetComponent<Renderer>().bounds.min.z;
+                list[i].AdjustEntireGraphPosition(new Vector3(0, 0, newZ + 5));
+                list[i].offset += new Vector3(0,0,newZ + 5);
 
             }
 
-            Vector3 adjustCategoriesEdge = new Vector3(sbomList[i].BoundaryBox.GetComponent<Renderer>().bounds.min.x - 2, 0, sbomList[i].BoundaryBox.GetComponent<Renderer>().bounds.min.z);
+            Vector3 adjustCategoriesEdge = new Vector3(list[i].BoundaryBox.GetComponent<Renderer>().bounds.min.x - 2, 0, list[i].BoundaryBox.GetComponent<Renderer>().bounds.min.z);
 
-            PositionCategoryBalls(sbomList[i], adjustCategoriesEdge - sbomList[i].offsetCategories);
-            sbomList[i].offsetCategories = adjustCategoriesEdge;
+            PositionCategoryBalls(list[i], adjustCategoriesEdge - list[i].offsetCategories);
+            list[i].offsetCategories = adjustCategoriesEdge;
 
         }
         

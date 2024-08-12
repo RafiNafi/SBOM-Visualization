@@ -495,14 +495,6 @@ public class GraphReader
         }
     }
 
-    public void AdjustBallPosition(Vector3 position)
-    {
-        foreach (var obj in dataObjects)
-        {
-            obj.DataBall.transform.position += position;
-        }
-    }
-
     public void AdjustEntireGraphPosition(Vector3 position)
     {
         foreach (var obj in dataObjects)
@@ -622,7 +614,7 @@ public class GraphReader
                 if(index < colors.Count)
                 {
 
-                    GameObject categoryPoint = MonoBehaviour.Instantiate(BallPrefab, new Vector3(1 - (x * 0.75f), 1 + (z * 0.5f) + (x%2) * 0.25f, 2 + (z * 0.5f) + (x%2) * 0.25f), Quaternion.identity);
+                    GameObject categoryPoint = MonoBehaviour.Instantiate(BallPrefab, new Vector3(1 - (x * 0.75f), 0 + (z * 0.5f) + (x%2) * 0.25f, 2 + (z * 0.5f) + (x%2) * 0.25f), Quaternion.identity);
                     TextMeshPro text = categoryPoint.GetComponentInChildren<TextMeshPro>();
 
 

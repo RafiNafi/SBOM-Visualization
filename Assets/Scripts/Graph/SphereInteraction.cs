@@ -26,6 +26,6 @@ public class SphereInteraction : MonoBehaviour
     private void OnSelectEntered(SelectEnterEventArgs args)
     {
         Debug.Log("Sphere " + gameObject.name);
-        GetComponent<Renderer>().material.color = Color.red;
+        //GetComponent<Renderer>().material.color = Color.red;
     }
 }
