@@ -8,6 +8,7 @@ using Unity.VisualScripting;
 using System.Net.Http;
 using Newtonsoft.Json;
 using UnityEngine.Networking;
+using System.Net;
 
 public class DatabaseDataHandler : MonoBehaviour
 {
@@ -171,5 +172,27 @@ public class DatabaseDataHandler : MonoBehaviour
         }
     }
 
+    public IEnumerator GetAllCVEDataBySubstringAndField(string json, string field, System.Action<List<string>> callback)
+    {
 
+        UnityWebRequest request = new UnityWebRequest(BackendConnectionString + "/api/DB/" + field + "/", "POST");
+        byte[] bodyRaw = System.Text.Encoding.UTF8.GetBytes(json);
+        request.uploadHandler = new UploadHandlerRaw(bodyRaw);
+        request.downloadHandler = new DownloadHandlerBuffer();
+        request.SetRequestHeader("Content-Type", "application/json");
+
+        yield return request.SendWebRequest();
+
+        if (request.result == UnityWebRequest.Result.Success)
+        {
+            Debug.Log(": Received: " + request.downloadHandler.text);
+            List<string> responseData = JsonConvert.DeserializeObject<List<string>>(request.downloadHandler.text);
+            callback(responseData);
+        }
+        else
+        {
+            Debug.Log(": Error: " + request.error);
+            callback(null);
+        }
+    }
 }

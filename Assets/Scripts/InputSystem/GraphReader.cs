@@ -81,7 +81,7 @@ public class GraphReader
 
     public void ReadFileAndCreateObjects(string sbomElement)
     {
-
+        Debug.Log(sbomElement.ToString());
         dynamic jsonObj = JObject.Parse(sbomElement.ToString());
 
         var dict = JsonConvert.DeserializeObject<Dictionary<string, JToken>>(sbomElement.ToString());
@@ -165,6 +165,7 @@ public class GraphReader
                     DataObject new_parent = CreateDataObjectWithBall(parent.level + 1, kv.Key, "", parent);
                     dataObjects.Add(new_parent);
 
+                    //for invalid characters conbtained
                     try
                     {
                         var dict2 = JsonConvert.DeserializeObject<Dictionary<string, JToken>>(Value);

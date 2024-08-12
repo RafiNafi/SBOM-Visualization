@@ -250,16 +250,37 @@ public class MenuInteraction : MonoBehaviour
         PositionAllGraphs();
     }
 
+    [System.Serializable]
+    public class StringListWrapper
+    {
+        public List<string> strings;
+    }
+
     public void ShowCVENodes()
     {
         
         string searchCWE_ID = "CVE-2022-33915";
-        string searchCWE_Name = "Log4j";
+        string field = "cveMetadata.cveId";
+        //string searchCWE_Name = "Log4j";
+        //string field = "containers.cna.affected.product";
 
-        string field = "containers.cna.affected.product";
+        List<string> CVEIds = new List<string>();
 
-        StartCoroutine(dbHandler.GetCVEDataBySubstringAndField(searchCWE_Name, field, ShowAllCVENodes));
-  
+        foreach(var graph in sbomList)
+        {
+            foreach(DataObject dobj in graph.dataObjects)
+            {
+                if(dobj.key.Contains("CVE"))
+                {
+                    CVEIds.Add(dobj.key);
+                }
+            }
+        }
+
+        string json = JsonUtility.ToJson(new StringListWrapper { strings = CVEIds });
+
+        //StartCoroutine(dbHandler.GetCVEDataBySubstringAndField(searchCWE_ID, field, ShowAllCVENodes));
+        StartCoroutine(dbHandler.GetAllCVEDataBySubstringAndField(json, field, ShowAllCVENodes));
     }
 
     public void ShowAllCVENodes(List<string> cveData)
@@ -272,6 +293,12 @@ public class MenuInteraction : MonoBehaviour
             newGraph.CreateGraph(cve, "Sphere", showDuplicateNodesToggle.isOn);
             cveList.Add(newGraph);
         }
+        PositionCVEGraphs();
+    }
+
+    public void PositionCVEGraphs()
+    {
+
     }
 
     public void PositionAllGraphs()
