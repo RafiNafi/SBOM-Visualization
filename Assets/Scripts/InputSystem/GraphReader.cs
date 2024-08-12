@@ -287,15 +287,6 @@ public class GraphReader
 
         }
         nodeOccurrences.Clear();
-
-        foreach (DataObject obj in dataObjects) 
-        {
-            Debug.Log("KEY:" + obj.key + " VALUE: " + obj.value);
-            foreach(DataObject parent in obj.parent)
-            {
-                Debug.Log("PARENT:" + parent.key);
-            }
-        }
     }
 
     public void ProcessLevelOccurence(int num)

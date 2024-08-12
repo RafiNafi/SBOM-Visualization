@@ -13,6 +13,7 @@ using UnityEngine.UIElements;
 using UnityEngine.Networking;
 using Microsoft.MixedReality.Toolkit.Experimental.UI;
 using System;
+using static UnityEngine.GraphicsBuffer;
 public class MenuInteraction : MonoBehaviour
 {
 
@@ -36,8 +37,7 @@ public class MenuInteraction : MonoBehaviour
 
     public GameObject BallPrefab;
 
-    public Canvas c;
-
+    public GameObject camSphere;
 
     // Start is called before the first frame update
     void Start()
@@ -258,28 +258,38 @@ public class MenuInteraction : MonoBehaviour
 
     public void ShowCVENodes()
     {
-        
-        string field = "cveMetadata.cveId";
-        //string searchCWE_Name = "Log4j";
-        //string field = "containers.cna.affected.product";
-
-        List<string> CVEIds = new List<string>();
-
-        foreach(var graph in sbomList)
+        if (showCWEToggle.isOn) 
         {
-            foreach(DataObject dobj in graph.dataObjects)
+            string field = "cveMetadata.cveId";
+
+            List<string> CVEIds = new List<string>();
+
+            foreach (var graph in sbomList)
             {
-                if(dobj.key.Contains("CVE"))
+                foreach (DataObject dobj in graph.dataObjects)
                 {
-                    CVEIds.Add(dobj.key);
+                    if (dobj.key.Contains("CVE"))
+                    {
+                        CVEIds.Add(dobj.key);
+                    }
                 }
             }
+
+            string json = JsonUtility.ToJson(new StringListWrapper { strings = CVEIds });
+
+            //StartCoroutine(dbHandler.GetCVEDataBySubstringAndField(searchCWE_ID, field, ShowAllCVENodes));
+            StartCoroutine(dbHandler.GetAllCVEDataBySubstringAndField(json, field, ShowAllCVENodes));
+        } 
+        else
+        {
+            foreach(GraphReader dobj in cveList)
+            {
+                dobj.Initialization();
+                //Debug.Log("REMOVE: " + dobj.dbid);
+            }
+
+            cveList.Clear();
         }
-
-        string json = JsonUtility.ToJson(new StringListWrapper { strings = CVEIds });
-
-        //StartCoroutine(dbHandler.GetCVEDataBySubstringAndField(searchCWE_ID, field, ShowAllCVENodes));
-        StartCoroutine(dbHandler.GetAllCVEDataBySubstringAndField(json, field, ShowAllCVENodes));
     }
 
     public void ShowAllCVENodes(List<string> cveData)
@@ -356,14 +366,13 @@ public class MenuInteraction : MonoBehaviour
         }
 
         float maxRadius = CalculateMaxCircleRadius();
-        float previousValues = 0;
         Vector3 edge = Vector3.zero;
 
         for (int i = 0; i < list.Count; i++)
         {
             float radius = GetGraphRadiusX(list[i].BoundaryBox);
 
-            Vector3 move = new Vector3(multiplier * maxRadius + (multiplier * maxRadius / 2), 0, edge.z);
+            Vector3 move = new Vector3(multiplier * maxRadius + (multiplier * 12), 0, edge.z);
             list[i].AdjustEntireGraphPosition(move - list[i].offset);
             list[i].offset = move;
 
@@ -383,8 +392,19 @@ public class MenuInteraction : MonoBehaviour
             PositionCategoryBalls(list[i], adjustCategoriesEdge - list[i].offsetCategories);
             list[i].offsetCategories = adjustCategoriesEdge;
 
+            ChangeBallRotation(list[i]);
         }
         
+    }
+
+    public void ChangeBallRotation(GraphReader g)
+    {
+        foreach (DataObject dobj in g.dataObjects)
+        {
+            Vector3 directionToTarget = camSphere.transform.position - dobj.DataBall.transform.position;
+
+            dobj.DataBall.transform.rotation = Quaternion.LookRotation(-directionToTarget);
+        }
     }
 
     public void PositionCategoryBalls(GraphReader g, Vector3 adjust)
