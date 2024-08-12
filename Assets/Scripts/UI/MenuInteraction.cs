@@ -255,6 +255,7 @@ public class MenuInteraction : MonoBehaviour
         
         string searchCWE_ID = "CVE-2022-33915";
         string searchCWE_Name = "Log4j";
+
         string field = "containers.cna.affected.product";
 
         StartCoroutine(dbHandler.GetCVEDataBySubstringAndField(searchCWE_Name, field, ShowAllCVENodes));
@@ -266,6 +267,7 @@ public class MenuInteraction : MonoBehaviour
         foreach (string cve in cveData)
         {
             GraphReader newGraph = new GraphReader();
+            newGraph.isCVE = true;
             newGraph.BallPrefab = BallPrefab;
             newGraph.CreateGraph(cve, "Sphere", showDuplicateNodesToggle.isOn);
             cveList.Add(newGraph);

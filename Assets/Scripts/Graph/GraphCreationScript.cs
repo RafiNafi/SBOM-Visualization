@@ -41,7 +41,7 @@ public class GraphCreationScript : MonoBehaviour
                 List<Vector3> pointlist = new List<Vector3>();
                 pointlist.Add(previousV);
                 pointlist.Add(new Vector3(Mathf.Cos(angle) * (ballCount / 5), 2, Mathf.Sin(angle) * (ballCount / 5)));
-                ld.CreateLine(pointlist);
+                ld.CreateLine(pointlist, false);
             }
 
             //previousData

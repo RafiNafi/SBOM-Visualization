@@ -34,6 +34,8 @@ public class GraphReader
     public Vector3 graphMin = Vector3.zero;
     public Vector3 graphMax = Vector3.zero;
 
+    public bool isCVE = false;
+
     public void CreateGraph(string sbomElement, string graphType, bool showDuplicateNodes)
     {
         Initialization();
@@ -163,8 +165,17 @@ public class GraphReader
                     DataObject new_parent = CreateDataObjectWithBall(parent.level + 1, kv.Key, "", parent);
                     dataObjects.Add(new_parent);
 
-                    var dict2 = JsonConvert.DeserializeObject<Dictionary<string, JToken>>(Value);
-                    RecursiveRead(dict2, kv.Key, new_parent);
+                    try
+                    {
+                        var dict2 = JsonConvert.DeserializeObject<Dictionary<string, JToken>>(Value);
+                        RecursiveRead(dict2, kv.Key, new_parent);
+                    }
+                    catch(Exception e)
+                    {
+                        Debug.Log(Value);
+                        var dict2 = JsonConvert.DeserializeObject<Dictionary<string, JToken>>("{"+"\"Contained Invalid Character\":\"\""+"}");
+                        RecursiveRead(dict2, kv.Key, new_parent);
+                    }
                 }
 
             }
@@ -550,7 +561,7 @@ public class GraphReader
                     List<Vector3> pointlist = new List<Vector3>();
                     pointlist.Add(point.DataBall.transform.position);
                     pointlist.Add(p.DataBall.transform.position);
-                    GameObject line = ld.CreateLine(pointlist);
+                    GameObject line = ld.CreateLine(pointlist, isCVE);
 
                     point.relationship_line_parent.Add(line);
                 }

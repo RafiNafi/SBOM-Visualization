@@ -28,6 +28,7 @@ public class DatabaseDataHandler : MonoBehaviour
     
     public IEnumerator GetDatabaseDataById(string id, System.Action<string, string> callback)
     {
+        //Alternative Http Version
         /*
         string responseData = "";
         // Create an instance of HttpClient
@@ -74,6 +75,7 @@ public class DatabaseDataHandler : MonoBehaviour
 
     public IEnumerator GetOnlyAllDocumentNames(System.Action<List<string>> callback)
     {
+        //Alternative Http Version
         /*
         List<string> responseData = new List<string>();
 
@@ -122,7 +124,8 @@ public class DatabaseDataHandler : MonoBehaviour
 
     public IEnumerator GetCVEDataBySubstringAndField(string searchCWE, string field, System.Action<List<string>> callback)
     {
-        /*
+        //Alternative Http Version
+        /* 
         List<string> responseData = new List<string>();
 
         using (HttpClient client = new HttpClient())

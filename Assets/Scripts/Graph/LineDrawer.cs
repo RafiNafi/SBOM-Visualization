@@ -16,13 +16,23 @@ public class LineDrawer
         this.lineW = lineW;
     }
 
-    public GameObject CreateLine(List<Vector3> pointlist)
+    public GameObject CreateLine(List<Vector3> pointlist, bool isCVE)
     {
         newLine = new GameObject();
         lineRenderer = newLine.AddComponent<LineRenderer>();
         lineRenderer.material = new Material(Shader.Find("Sprites/Default"));
-        lineRenderer.startColor = new Color(0, 0, 1, 0.9f);
-        lineRenderer.endColor = new Color(0, 0, 1, 0.9f);
+
+        if (isCVE) 
+        {
+            lineRenderer.startColor = new Color(1, 0, 0, 0.9f);
+            lineRenderer.endColor = new Color(1, 0, 0, 0.9f);
+        } 
+        else
+        {
+            lineRenderer.startColor = new Color(0, 0, 1, 0.9f);
+            lineRenderer.endColor = new Color(0, 0, 1, 0.9f);
+        }
+
         lineRenderer.startWidth = lineW;
         lineRenderer.endWidth = lineW;
 

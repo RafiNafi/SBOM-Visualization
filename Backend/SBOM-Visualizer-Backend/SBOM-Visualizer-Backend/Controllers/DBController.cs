@@ -65,10 +65,30 @@ namespace SBOM_Visualizer_Backend.Controllers
 
             foreach (var document in docs)
             {
-                //Debug.Log(document.ToString());
                 document["_id"] = document["_id"].ToString();
-                CVEList.Add(document.ToString());
+
+                string shortenedVersion = "{\"CVE Record\": {";
+                shortenedVersion += "\"CVE-ID\":" + "\"" + document["cveMetadata"]["cveId"] + "\",";
+                shortenedVersion += "\"Product\":" + "\"" + document["containers"]["cna"]["affected"][0]["product"] + "\",";
+                shortenedVersion += "\"Vendor\":" + "\"" + document["containers"]["cna"]["affected"][0]["vendor"] + "\",";
+                if(document["containers"]["cna"]["descriptions"][0]["value"].ToString() != null)
+                {
+                    shortenedVersion += "\"Description\":" + "\"" + document["containers"]["cna"]["descriptions"][0]["value"].ToString().Replace("{", "").Replace("}", "") + "\",";
+                } 
+                else
+                {
+                    shortenedVersion += "\"Description\":" + "\"" + document["containers"]["cna"]["descriptions"][0]["value"] + "\",";
+                }
+                shortenedVersion += "\"Problem Type\":" + "\"" + document["containers"]["cna"]["problemTypes"][0]["descriptions"][0]["description"] + "\"";
+                shortenedVersion += "}}";
+
+                //CVEList.Add(document.ToString());
+
+                CVEList.Add(shortenedVersion);
+                Console.WriteLine(shortenedVersion);
             }
+
+            
 
             return Ok(CVEList);
         }
