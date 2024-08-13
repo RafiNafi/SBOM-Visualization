@@ -324,9 +324,6 @@ public class GraphReader
                 break;
         }
 
-        //Vector3 position = new Vector3(Mathf.Sqrt(dataObjects.Count) * 2, 0, 0);
-        //AdjustBallPosition(position);
-
         DrawLinesBetweenDataBalls();
 
         MakeGraphBoundaries();
@@ -334,6 +331,7 @@ public class GraphReader
 
     public void PositionAsRadialTidyTree()
     {
+        
         //Radius depending on level and number of 3d balls
         int previous_nr_balls = 0;
 
@@ -347,14 +345,73 @@ public class GraphReader
                 {
                     int ballCount = level_occurrences[key] + previous_nr_balls;
                     float angle = (i * Mathf.PI * 2f) / ballCount;
-                    Vector3 v = new Vector3(Mathf.Cos(angle) * ((ballCount) + 1.5f * key), 4 + key * 2, Mathf.Sin(angle) * ((ballCount) + 1.5f * key * 1));
+                    Vector3 v = new Vector3(Mathf.Cos(angle) * ((ballCount) + 1.5f * key), 3 + key * 2, Mathf.Sin(angle) * ((ballCount) + 1.5f * key * 1));
                     dataObjects[i].DataBall.transform.position = v;
-                    //Debug.Log(dataObjects[i].nr_children);
                 }
             }
             previous_nr_balls += level_occurrences[key];
         }
+        
+
+        //ArrangeBallsInRadialTree(dataObjects[0],0);
     }
+
+    /*
+    float BallRadius = 10f;
+    public float radiusIncrement = 5f;
+
+    void ArrangeBallsInRadialTree(DataObject parent, int level)
+    {
+        // Get all child transforms (balls)
+        DataObject[] children = GetChildBalls(parent);
+
+        // Calculate the number of children
+        int childCount = children.Length;
+
+
+        // If there are no children, return
+        if (childCount == 0)
+            return;
+
+        float currentRadius = BallRadius + (level * radiusIncrement);
+
+        // Angle between each child
+        float angleStep = 360f / childCount;
+
+        for (int i = 0; i < childCount; i++)
+        {
+            // Calculate angle in radians
+            float angle = i * angleStep * Mathf.Deg2Rad;
+
+            // Calculate the new position for the child
+            Vector3 newPosition = new Vector3(
+                Mathf.Cos(angle) * currentRadius,
+                0f, // Keep the Y position the same; adjust if needed
+                Mathf.Sin(angle) * currentRadius
+            );
+
+            // Set the child's position relative to the parent
+            children[i].DataBall.transform.localPosition = newPosition;
+
+            // Recursively arrange children of the current ball
+            ArrangeBallsInRadialTree(children[i], level + 1);
+        }
+    }
+
+    // Helper function to get all child balls
+    DataObject[] GetChildBalls(DataObject parent)
+    {
+        List<DataObject> balls = new List<DataObject>();
+        foreach (DataObject child in dataObjects)
+        {
+            if(child.parent.Contains(parent))
+            {
+                balls.Add(child);
+            }
+        }
+        return balls.ToArray();
+    }
+    */
 
     public void PositionAsForceDirectedGraph()
     {

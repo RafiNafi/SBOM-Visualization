@@ -1,0 +1,80 @@
+{"name": "32098/github.com/CortezFrazierJr/my_recipe_book-418bed3e334f2c1b2d4de973e069037dc2faf60e",
+"documentNamespace": "https://s3.us-east-1.amazonaws.com/blob.fossa.io/FOSSA_BOMS/custom%2B32098%2Fgithub.com%2FCortezFrazierJr%2Fmy_recipe_book%24418bed3e334f2c1b2d4de973e069037dc2faf60e",
+"dataLicense": "CC0-2.0",  
+"packages": [
+{      
+"SPDXID": "SPDXRef-custom-32098-github.com-CortezFrazierJr-my-recipe-book-418bed3e334f2c1b2d4de973e069037dc2faf60e",
+"name": "https://github.com/CortezFrazierJr/my_recipe_book.git",
+"versionInfo": "418bed3e334f2c1b2d4de973e069037dc2faf60e",
+"filesAnalyzed": true,      
+"downloadLocation": "NOASSERTION",
+"originator": "Organization: Custom (provided build)",
+"supplier": "Organization: Uchiha Cortez",
+"packageFileName": "custom+32098/github.com/CortezFrazierJr/my_recipe_book$418bed3e334f2c1b2d4de973e069037dc2faf60e",
+"summary": "Project uploaded via Provided Builds from fossa-cli",
+"licenseDeclared": "LicenseRef-ISC-26342263",
+"copyrightText": "NONE",
+"homepage": "NOASSERTION",
+"licenseConcluded": "NOASSERTION",
+"checksums": [{          
+"algorithm": "SHA1",
+"checksumValue": "10cab2cd0690ffb91baeba0b42a3453b"},
+{          
+"algorithm": "SHA1",
+"checksumValue": "c147bad1f95516ab7bee6ba2023020d7123c2fac"        },
+{          
+"algorithm": "SHA256",
+"checksumValue": "ee1300ac533cebc2d070ce3765685d5f7fca2a5a78ca15068323f68ed63d4abf"        }      ],
+"externalRefs": []},
+
+    {
+      "SPDXID": "SPDXRef-npm-lodash-4.17.20",
+      "name": "lodash",
+      "versionInfo": "4.17.20",
+      "filesAnalyzed": true,
+      "downloadLocation": "https://registry.npmjs.org/lodash/-/lodash-4.17.20.tgz",
+      "originator": "Organization: NPM",
+      "supplier": "Person: mathias@qiwi.be,john.david.dalton@gmail.com,benjamin@dev.ofcr.se",
+      "summary": "Lodash modular utilities.",
+      "hasFiles": [
+        "SPDXRef-npm-lodash-4.17.20-LICENSE",
+        "SPDXRef-npm-lodash-4.17.20-core.js"
+      ],
+      "licenseDeclared": "LicenseRef-CC0-1.0 OR LicenseRef-MIT-13144922",
+      "copyrightText": "OpenJS Foundation and other contributors <https://openjsf.org/>\n\t OpenJS Foundation and other contributors <https://openjsf.org/>\n\t Jeremy Ashkenas,",
+      "licenseInfoFromFiles": [
+        "LicenseRef-MIT-13144923"
+      ],
+      "homepage": "https://www.npmjs.com/package/lodash",
+      "licenseConcluded": "NOASSERTION",
+      "checksums": [
+        {
+          "algorithm": "MD5",
+          "checksumValue": "e33dff97c91ad3d9edb8cd228a6267b6"
+        },
+        {
+          "algorithm": "SHA1",
+          "checksumValue": "c39c8563f0a7d06165a74823d05aac4d43b9d5e1"
+        },
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "c0444174b134500982b8b190442393f3d28c1f85f87ed75c6e0b911799a1d6a8"
+        }
+      ],
+	  	"CVE-IDs": [
+		"CVE-2018-16487",
+		"CVE-2018-3721",
+		"CVE-2019-1010266",
+		"CVE-2019-10744",
+		"CVE-2020-8203"
+	  ],
+      "externalRefs": [
+        {
+          "referenceCategory": "PACKAGE-MANAGER",
+          "referenceType": "purl",
+          "referenceLocator": "pkg:npm/lodash@4.17.20"
+        }
+      ]
+    }
+
+]}
