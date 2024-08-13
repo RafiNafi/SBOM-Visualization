@@ -11,13 +11,16 @@ namespace SBOM_Visualizer_Backend.Controllers
     public class DBController : ControllerBase
     {
         const string MongoDBConnectionString = "mongodb://localhost:27017"; //Localhost
+        const string DBName = "SBOMDATA";
+        const string CollectionSBOMName = "SBOMDATA";
+        const string CollectionCVEName = "CVE";
 
         [HttpGet("{id}")]
         public IActionResult GetDatabaseDataById(string id)
         {
             var client = new MongoClient(MongoDBConnectionString);
-            var database = client.GetDatabase("SBOMDATA");
-            var collection = database.GetCollection<BsonDocument>("SBOMDATA");
+            var database = client.GetDatabase(DBName);
+            var collection = database.GetCollection<BsonDocument>(CollectionSBOMName);
 
             var filter = Builders<BsonDocument>.Filter.Eq("_id", ObjectId.Parse(id));
 
@@ -35,8 +38,8 @@ namespace SBOM_Visualizer_Backend.Controllers
             List<string> names = new List<string>();
 
             var client = new MongoClient(MongoDBConnectionString);
-            var database = client.GetDatabase("SBOMDATA");
-            var collection = database.GetCollection<BsonDocument>("SBOMDATA");
+            var database = client.GetDatabase(DBName);
+            var collection = database.GetCollection<BsonDocument>(CollectionSBOMName);
 
             var projection = Builders<BsonDocument>.Projection.Include("_id");
             // var filter = Builders<BsonDocument>.Filter.Eq("dataLicense", "CC0-1");
@@ -56,8 +59,8 @@ namespace SBOM_Visualizer_Backend.Controllers
             List<string> CVEList = new List<string>();
 
             var client = new MongoClient(MongoDBConnectionString);
-            var database = client.GetDatabase("SBOMDATA");
-            var collection = database.GetCollection<BsonDocument>("CVE");
+            var database = client.GetDatabase(DBName);
+            var collection = database.GetCollection<BsonDocument>(CollectionCVEName);
 
             // filter using a regex to search for the substring
             var filter = Builders<BsonDocument>.Filter.Regex(field, new BsonRegularExpression(searchCVE, "i"));
@@ -107,8 +110,8 @@ namespace SBOM_Visualizer_Backend.Controllers
             List<string> CVEList = new List<string>();
 
             var client = new MongoClient(MongoDBConnectionString);
-            var database = client.GetDatabase("SBOMDATA");
-            var collection = database.GetCollection<BsonDocument>("CVE");
+            var database = client.GetDatabase(DBName);
+            var collection = database.GetCollection<BsonDocument>(CollectionCVEName);
 
             foreach(string id in stringsWrapper.strings)
             {
