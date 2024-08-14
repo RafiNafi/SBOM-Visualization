@@ -10,10 +10,28 @@ namespace SBOM_Visualizer_Backend.Controllers
     [ApiController]
     public class DBController : ControllerBase
     {
-        const string MongoDBConnectionString = "mongodb://localhost:27017"; //Localhost
+        const string MongoDBConnectionString = "mongodb://localhost:27017";
         const string DBName = "SBOMDATA";
         const string CollectionSBOMName = "SBOMDATA";
         const string CollectionCVEName = "CVE";
+
+
+        [HttpGet("SBOM/{value}/{field}")]
+        public IActionResult GetSBOMDataBySubstringAndField(string value, string field)
+        {
+
+            var client = new MongoClient(MongoDBConnectionString);
+            var database = client.GetDatabase(DBName);
+            var collection = database.GetCollection<BsonDocument>(CollectionCVEName);
+
+            var filter = Builders<BsonDocument>.Filter.Regex(field, new BsonRegularExpression(value, "i"));
+
+            var doc = collection.Find(filter).First();
+
+            doc["_id"] = doc["_id"].ToString();
+
+            return Ok(doc.ToString());
+        }
 
         [HttpGet("{id}")]
         public IActionResult GetDatabaseDataById(string id)
@@ -42,7 +60,6 @@ namespace SBOM_Visualizer_Backend.Controllers
             var collection = database.GetCollection<BsonDocument>(CollectionSBOMName);
 
             var projection = Builders<BsonDocument>.Projection.Include("_id");
-            // var filter = Builders<BsonDocument>.Filter.Eq("dataLicense", "CC0-1");
             var docs = collection.Find(new BsonDocument()).Project(projection).ToList();
 
             foreach (var document in docs)
@@ -53,8 +70,8 @@ namespace SBOM_Visualizer_Backend.Controllers
             return Ok(names);
         }
 
-        [HttpGet("{searchCVE}/{field}")]
-        public IActionResult GetCVEDataBySubstringAndField(string searchCVE, string field)
+        [HttpGet("{value}/{field}")]
+        public IActionResult GetCVEDataBySubstringAndField(string value, string field)
         {
             List<string> CVEList = new List<string>();
 
@@ -62,8 +79,8 @@ namespace SBOM_Visualizer_Backend.Controllers
             var database = client.GetDatabase(DBName);
             var collection = database.GetCollection<BsonDocument>(CollectionCVEName);
 
-            // filter using a regex to search for the substring
-            var filter = Builders<BsonDocument>.Filter.Regex(field, new BsonRegularExpression(searchCVE, "i"));
+            // a regex to search for substring
+            var filter = Builders<BsonDocument>.Filter.Regex(field, new BsonRegularExpression(value, "i"));
 
             var docs = collection.Find(filter).ToList();
 
@@ -71,38 +88,20 @@ namespace SBOM_Visualizer_Backend.Controllers
             {
                 document["_id"] = document["_id"].ToString();
 
-                string shortenedVersion = "{\"CVE Record\": {";
-                shortenedVersion += "\"CVE-ID\":" + "\"" + document["cveMetadata"]["cveId"] + "\",";
-                shortenedVersion += "\"Product\":" + "\"" + document["containers"]["cna"]["affected"][0]["product"] + "\",";
-                shortenedVersion += "\"Vendor\":" + "\"" + document["containers"]["cna"]["affected"][0]["vendor"] + "\",";
-                if(document["containers"]["cna"]["descriptions"][0]["value"].ToString() != null)
-                {
-                    shortenedVersion += "\"Description\":" + "\"" + document["containers"]["cna"]["descriptions"][0]["value"].ToString().Replace("{", "").Replace("}", "") + "\",";
-                } 
-                else
-                {
-                    shortenedVersion += "\"Description\":" + "\"" + document["containers"]["cna"]["descriptions"][0]["value"] + "\",";
-                }
-                shortenedVersion += "\"Problem Type\":" + "\"" + document["containers"]["cna"]["problemTypes"][0]["descriptions"][0]["description"] + "\"";
-                shortenedVersion += "}}";
-
-                //CVEList.Add(document.ToString());
-
+                string shortenedVersion = ShortenInformation(document);
                 CVEList.Add(shortenedVersion);
-                Console.WriteLine(shortenedVersion);
+
+                //CVEList.Add(document.ToString());  // To get all CVE Information uncomment this and comment two lines above
             }
-
-            
-
             return Ok(CVEList);
         }
 
 
         [HttpPost("{field}")]
-        public IActionResult GetAllCVEDataBySubstringAndField([FromBody] StringListWrapper stringsWrapper, string field)
+        public IActionResult GetAllCVEDataBySubstringAndField([FromBody] ListWrapper stringsWrapper, string field)
         {
 
-            if (stringsWrapper == null || stringsWrapper.strings == null)
+            if (stringsWrapper == null || stringsWrapper.values == null)
             {
                 return BadRequest("Invalid data.");
             }
@@ -113,10 +112,8 @@ namespace SBOM_Visualizer_Backend.Controllers
             var database = client.GetDatabase(DBName);
             var collection = database.GetCollection<BsonDocument>(CollectionCVEName);
 
-            foreach(string id in stringsWrapper.strings)
+            foreach(string id in stringsWrapper.values)
             {
-                Console.WriteLine(id);
-                // filter using a regex to search for the substring
                 var filter = Builders<BsonDocument>.Filter.Regex(field, new BsonRegularExpression(id, "i"));
 
                 var docs = collection.Find(filter).ToList();
@@ -125,35 +122,42 @@ namespace SBOM_Visualizer_Backend.Controllers
                 {
                     document["_id"] = document["_id"].ToString();
 
-                    string shortenedVersion = "{\"CVE Record\": {";
-                    shortenedVersion += "\"CVE-ID\":" + "\"" + document["cveMetadata"]["cveId"] + "\",";
-                    shortenedVersion += "\"Product\":" + "\"" + document["containers"]["cna"]["affected"][0]["product"] + "\",";
-                    shortenedVersion += "\"Vendor\":" + "\"" + document["containers"]["cna"]["affected"][0]["vendor"] + "\",";
-
-                    if (document["containers"]["cna"]["descriptions"][0]["value"].ToString() != null)
-                    {
-                        shortenedVersion += "\"Description\":" + "\"" + 
-                            document["containers"]["cna"]["descriptions"][0]["value"].ToString().Replace("{", "(").Replace("}", ")").Replace("\"", "\\\"") + "\",";
-                    }
-                    else
-                    {
-                        shortenedVersion += "\"Description\":" + "\"" + document["containers"]["cna"]["descriptions"][0]["value"] + "\",";
-                    }
-
-                    shortenedVersion += "\"Problem Type\":" + "\"" + document["containers"]["cna"]["problemTypes"][0]["descriptions"][0]["description"] + "\"";
-                    shortenedVersion += "}}";
+                    string shortenedVersion = ShortenInformation(document);
 
                     CVEList.Add(shortenedVersion);
-                    Console.WriteLine(shortenedVersion);
                 }
             }
 
             return Ok(CVEList);
         }
 
-        public class StringListWrapper
+        [NonAction]
+        public string ShortenInformation(BsonDocument document)
         {
-            public List<string> strings { get; set; }
+            string shortenedVersion = "{\"CVE Record\": {";
+            shortenedVersion += "\"CVE-ID\":" + "\"" + document["cveMetadata"]["cveId"] + "\",";
+            shortenedVersion += "\"Product\":" + "\"" + document["containers"]["cna"]["affected"][0]["product"] + "\",";
+            shortenedVersion += "\"Vendor\":" + "\"" + document["containers"]["cna"]["affected"][0]["vendor"] + "\",";
+
+            if (document["containers"]["cna"]["descriptions"][0]["value"].ToString() != null)
+            {
+                shortenedVersion += "\"Description\":" + "\"" +
+                    document["containers"]["cna"]["descriptions"][0]["value"].ToString().Replace("{", "(").Replace("}", ")").Replace("\"", "\\\"") + "\",";
+            }
+            else
+            {
+                shortenedVersion += "\"Description\":" + "\"" + document["containers"]["cna"]["descriptions"][0]["value"] + "\",";
+            }
+
+            shortenedVersion += "\"Problem Type\":" + "\"" + document["containers"]["cna"]["problemTypes"][0]["descriptions"][0]["description"] + "\"";
+            shortenedVersion += "}}";
+
+            return shortenedVersion;
+        }
+
+        public class ListWrapper
+        {
+            public List<string> values { get; set; }
         }
 
     }
