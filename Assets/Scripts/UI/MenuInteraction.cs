@@ -1,5 +1,3 @@
-using DnsClient;
-using MongoDB.Bson;
 using System.Collections;
 using System.Collections.Generic;
 using System.Drawing;
@@ -17,7 +15,7 @@ using static UnityEngine.GraphicsBuffer;
 public class MenuInteraction : MonoBehaviour
 {
 
-    public DatabaseDataHandler dbHandler;
+    public BackendDataHandler dbHandler;
 
     public GameObject scrollViewContent;
     public GameObject buttonTemplate;
@@ -133,13 +131,6 @@ public class MenuInteraction : MonoBehaviour
 
     public void SelectSBOM(string name)
     {
-        
-        StartCoroutine(dbHandler.GetDatabaseDataById(name, SBOMCreation));
-
-    }
-
-    public void SBOMCreation(string name, string bsonElements)
-    {
         //if graph exists already then delete it
         foreach (GraphReader graph in sbomList)
         {
@@ -153,6 +144,12 @@ public class MenuInteraction : MonoBehaviour
                 return;
             }
         }
+
+        StartCoroutine(dbHandler.GetDatabaseDataById(name, SBOMCreation));
+    }
+
+    public void SBOMCreation(string name, string bsonElements)
+    {
 
         //else create new graph
         GraphReader newGraph = new GraphReader();
