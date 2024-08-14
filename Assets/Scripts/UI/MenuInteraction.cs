@@ -282,7 +282,6 @@ public class MenuInteraction : MonoBehaviour
             foreach(GraphReader dobj in cveList)
             {
                 dobj.Initialization();
-                //Debug.Log("REMOVE: " + dobj.dbid);
             }
 
             cveList.Clear();

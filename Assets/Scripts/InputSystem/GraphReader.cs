@@ -356,7 +356,7 @@ public class GraphReader
     }
 
     /*
-    float BallRadius = 10f;
+    float MaxRadius = 20f;
     public float radiusIncrement = 5f;
 
     void ArrangeBallsInRadialTree(DataObject parent, int level)
@@ -372,7 +372,7 @@ public class GraphReader
         if (childCount == 0)
             return;
 
-        float currentRadius = BallRadius + (level * radiusIncrement);
+        float currentRadius = MaxRadius + (level * radiusIncrement);
 
         // Angle between each child
         float angleStep = 360f / childCount;
