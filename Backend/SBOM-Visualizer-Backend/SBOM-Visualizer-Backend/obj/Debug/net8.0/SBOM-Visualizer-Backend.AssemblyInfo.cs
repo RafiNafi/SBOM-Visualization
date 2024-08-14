@@ -14,7 +14,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("SBOM-Visualizer-Backend")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+dbe4b7a587e950de7b3a38581462af56785aa514")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+9d247bb0a5ddb83bb2f5eb2cbe5aa08238134bbd")]
 [assembly: System.Reflection.AssemblyProductAttribute("SBOM-Visualizer-Backend")]
 [assembly: System.Reflection.AssemblyTitleAttribute("SBOM-Visualizer-Backend")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

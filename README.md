@@ -1,5 +1,5 @@
 # SBOM-Visualization
-A unity project for SBOM visualization as different graph types in VR.
+A project for SBOM visualization as different graph types in VR.
 
 ## Repository Folder Structure
 

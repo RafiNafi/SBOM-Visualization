@@ -330,87 +330,85 @@ public class GraphReader
 
     public void PositionAsRadialTidyTree()
     {
-        
-        //Radius depending on level and number of 3d balls
-        int previous_nr_balls = 0;
+        float ballDiameter = 1f;
+        float previousRadius = ballDiameter / 2f;
+        int incHeight = 1;
 
         foreach (int key in level_occurrences.Keys)
         {
-            Debug.Log(key + "-:-" + level_occurrences[key]);
+            int numberOfBalls = level_occurrences[key]; // number of balls to arrange
+            int counter = 0;
+            float radius = 1f;
 
-            for (var i = 0; i < dataObjects.Count; i++)
+            if((2 * Mathf.Sin(Mathf.PI / numberOfBalls)) > 0)
+            {
+               radius = previousRadius + (ballDiameter / (2 * Mathf.Sin(Mathf.PI / numberOfBalls)));
+            }
+
+            for (int i = 0; i < dataObjects.Count; i++)
             {
                 if (key == dataObjects[i].level)
                 {
-                    int ballCount = level_occurrences[key] + previous_nr_balls;
-                    float angle = (i * Mathf.PI * 2f) / ballCount;
-                    Vector3 v = new Vector3(Mathf.Cos(angle) * ((ballCount) + 1.5f * key), 3 + key * 2, Mathf.Sin(angle) * ((ballCount) + 1.5f * key * 1));
-                    dataObjects[i].DataBall.transform.position = v;
+                    float angle = counter * Mathf.PI * 2 / numberOfBalls;
+                    float x = Mathf.Cos(angle) * radius;
+                    float z = Mathf.Sin(angle) * radius;
+
+                    Vector3 position = new Vector3(x, 0 + incHeight, z); 
+
+                    dataObjects[i].DataBall.transform.position = position;
+                    counter++;
                 }
+
             }
-            previous_nr_balls += level_occurrences[key];
+            incHeight += 2;
+            previousRadius = radius + ballDiameter;
         }
-        
 
-        //ArrangeBallsInRadialTree(dataObjects[0],0);
-    }
+        /*
+        float ballDiameter = 1f;
+        float previousRadius = ballDiameter / 2f;
+        int incHeight = 1;
 
-    /*
-    float MaxRadius = 20f;
-    public float radiusIncrement = 5f;
-
-    void ArrangeBallsInRadialTree(DataObject parent, int level)
-    {
-        // Get all child transforms (balls)
-        DataObject[] children = GetChildBalls(parent);
-
-        // Calculate the number of children
-        int childCount = children.Length;
-
-
-        // If there are no children, return
-        if (childCount == 0)
-            return;
-
-        float currentRadius = MaxRadius + (level * radiusIncrement);
-
-        // Angle between each child
-        float angleStep = 360f / childCount;
-
-        for (int i = 0; i < childCount; i++)
+        foreach (int key in level_occurrences.Keys)
         {
-            // Calculate angle in radians
-            float angle = i * angleStep * Mathf.Deg2Rad;
+            int numberOfBalls = level_occurrences[key]; // Number of balls to arrange
+            int counter = 0;
+            float radius = 1f;
 
-            // Calculate the new position for the child
-            Vector3 newPosition = new Vector3(
-                Mathf.Cos(angle) * currentRadius,
-                0f, // Keep the Y position the same; adjust if needed
-                Mathf.Sin(angle) * currentRadius
-            );
-
-            // Set the child's position relative to the parent
-            children[i].DataBall.transform.localPosition = newPosition;
-
-            // Recursively arrange children of the current ball
-            ArrangeBallsInRadialTree(children[i], level + 1);
-        }
-    }
-
-    // Helper function to get all child balls
-    DataObject[] GetChildBalls(DataObject parent)
-    {
-        List<DataObject> balls = new List<DataObject>();
-        foreach (DataObject child in dataObjects)
-        {
-            if(child.parent.Contains(parent))
+            if((2 * Mathf.Sin(Mathf.PI / numberOfBalls)) > 0)
             {
-                balls.Add(child);
+               radius = previousRadius + (ballDiameter / (2 * Mathf.Sin(Mathf.PI / numberOfBalls))); // Calculate the radius
             }
+
+            for (int i = 0; i < dataObjects.Count; i++)
+            {
+                if (key == dataObjects[i].level)
+                {
+                    float angleOffset = 0;
+
+                    if (dataObjects[i].parent.Count > 0)
+                    {
+                        angleOffset = CalculateAngularOffset(dataObjects[i], dataObjects[i].parent[0]);
+                    }
+
+                    float angle = angleOffset + counter * Mathf.PI * 2 / numberOfBalls;
+                    float x = Mathf.Cos(angle) * radius;
+                    float z = Mathf.Sin(angle) * radius;
+
+                    Vector3 position = new Vector3(x, 0 + incHeight, z);  // Assuming the circle is on the XZ plane
+
+                    dataObjects[i].DataBall.transform.position = position;
+                    counter++;
+                }
+
+            }
+            incHeight += 2;
+            previousRadius = radius + ballDiameter;
         }
-        return balls.ToArray();
+        }*/
     }
-    */
+
+
 
     public void PositionAsForceDirectedGraph()
     {
