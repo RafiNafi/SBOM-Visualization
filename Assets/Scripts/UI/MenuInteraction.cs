@@ -41,7 +41,6 @@ public class MenuInteraction : MonoBehaviour
     void Start()
     {
         AddScrollviewContent();
-        SetupInputField();
 
     }
 
@@ -159,12 +158,6 @@ public class MenuInteraction : MonoBehaviour
         sbomList.Add(newGraph);
         InitSliders();
         PositionAllGraphs(sbomList);
-    }
-
-    public void SetupInputField()
-    {
-        inputSearch.onSelect.AddListener( x => OpenKeyboard());
-        
     }
 
     public void OpenKeyboard()
@@ -417,7 +410,6 @@ public class MenuInteraction : MonoBehaviour
 
     public float CalculateMaxCircleRadius()
     {
-        // Calculate a base radius that ensures no overlap
         float maxRadius = 0f;
 
         foreach (GraphReader obj in sbomList)
@@ -445,12 +437,6 @@ public class MenuInteraction : MonoBehaviour
     {
         var bounds = obj.GetComponent<Renderer>().bounds;
         return bounds.extents.x;
-    }
-
-    public float GetGraphRadiusZ(GameObject obj)
-    {
-        var bounds = obj.GetComponent<Renderer>().bounds;
-        return bounds.extents.z;
     }
 
 }

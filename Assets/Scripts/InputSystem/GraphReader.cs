@@ -330,9 +330,11 @@ public class GraphReader
 
     public void PositionAsRadialTidyTree()
     {
+
+        Debug.Log(dataObjects.Count);
         float ballDiameter = 1f;
         float previousRadius = ballDiameter / 2f;
-        int incHeight = 1;
+        int incHeight = 0;
 
         foreach (int key in level_occurrences.Keys)
         {
@@ -412,7 +414,7 @@ public class GraphReader
 
     public void PositionAsForceDirectedGraph()
     {
-        float attractionForce = 0.5f;
+        float attractionForce = 0.7f;
         float repulsionForce = 0.8f;
         float damping = 0.9f;
 
@@ -421,21 +423,19 @@ public class GraphReader
             Vector3 force = Vector3.zero;
             node.DataBall.transform.position = UnityEngine.Random.insideUnitSphere * 10;
 
-            /*
-            // Apply repulsive force
             foreach (DataObject other in dataObjects)
             {
                 if (node != other)
                 {
                     Vector3 direction = node.DataBall.transform.position - other.DataBall.transform.position;
                     float distance = direction.magnitude;
-                    if (distance > 0) // avoid division by zero
+                    if (distance > 0)
                     {
                         force += direction.normalized * repulsionForce  / (distance * distance);
                     }
                 }
             }
-            */
+            
 
             // Apply attractive force to connected nodes
             foreach (DataObject neighbor in node.parent)
@@ -446,10 +446,8 @@ public class GraphReader
             }
 
             node.velocity = (node.velocity + force) * damping;
-
         }
 
-        //BoundaryBox.GetComponent<LineRenderer>().bounds.center;
         UpdatePositions();
     }
 
@@ -510,7 +508,7 @@ public class GraphReader
                         {
                             int ballCount = obj.Value.Count;
                             float angle = (i * Mathf.PI * 2f) / ballCount;
-                            Vector3 v = new Vector3(Mathf.Cos(angle) * radius + alternate, 1 + layer_level, Mathf.Sin(angle) * radius);
+                            Vector3 v = new Vector3(Mathf.Cos(angle) * radius + alternate, 0 + layer_level, Mathf.Sin(angle) * radius);
                             obj.Value[i].DataBall.transform.position = v;
 
                             alternate = alternate * (-1);
@@ -519,7 +517,7 @@ public class GraphReader
                         {
                             int ballCount = obj.Value.Count;
                             float angle = (i * Mathf.PI * 2f) / ballCount;
-                            Vector3 v = new Vector3(Mathf.Cos(angle) * radius, 1 + layer_level, Mathf.Sin(angle) * radius);
+                            Vector3 v = new Vector3(Mathf.Cos(angle) * radius, 0 + layer_level, Mathf.Sin(angle) * radius);
                             obj.Value[i].DataBall.transform.position = v;
                         }
                         

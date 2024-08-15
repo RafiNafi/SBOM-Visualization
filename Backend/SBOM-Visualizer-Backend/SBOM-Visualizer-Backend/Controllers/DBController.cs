@@ -98,10 +98,10 @@ namespace SBOM_Visualizer_Backend.Controllers
 
 
         [HttpPost("{field}")]
-        public IActionResult GetAllCVEDataBySubstringAndField([FromBody] ListWrapper stringsWrapper, string field)
+        public IActionResult GetAllCVEDataBySubstringAndField([FromBody] StringListWrapper stringsWrapper, string field)
         {
 
-            if (stringsWrapper == null || stringsWrapper.values == null)
+            if (stringsWrapper == null || stringsWrapper.strings == null)
             {
                 return BadRequest("Invalid data.");
             }
@@ -112,7 +112,7 @@ namespace SBOM_Visualizer_Backend.Controllers
             var database = client.GetDatabase(DBName);
             var collection = database.GetCollection<BsonDocument>(CollectionCVEName);
 
-            foreach(string id in stringsWrapper.values)
+            foreach(string id in stringsWrapper.strings)
             {
                 var filter = Builders<BsonDocument>.Filter.Regex(field, new BsonRegularExpression(id, "i"));
 
@@ -125,6 +125,8 @@ namespace SBOM_Visualizer_Backend.Controllers
                     string shortenedVersion = ShortenInformation(document);
 
                     CVEList.Add(shortenedVersion);
+
+                    //Console.WriteLine(shortenedVersion);
                 }
             }
 
@@ -155,9 +157,9 @@ namespace SBOM_Visualizer_Backend.Controllers
             return shortenedVersion;
         }
 
-        public class ListWrapper
+        public class StringListWrapper
         {
-            public List<string> values { get; set; }
+            public List<string> strings { get; set; }
         }
 
     }
