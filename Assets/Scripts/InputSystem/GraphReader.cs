@@ -331,14 +331,13 @@ public class GraphReader
     public void PositionAsRadialTidyTree()
     {
 
-        Debug.Log(dataObjects.Count);
         float ballDiameter = 1f;
         float previousRadius = ballDiameter / 2f;
         int incHeight = 0;
 
         foreach (int key in level_occurrences.Keys)
         {
-            int numberOfBalls = level_occurrences[key]; // number of balls to arrange
+            int numberOfBalls = level_occurrences[key];
             int counter = 0;
             float radius = 1f;
 
@@ -365,49 +364,6 @@ public class GraphReader
             incHeight += 2;
             previousRadius = radius + ballDiameter;
         }
-
-        /*
-        float ballDiameter = 1f;
-        float previousRadius = ballDiameter / 2f;
-        int incHeight = 1;
-
-        foreach (int key in level_occurrences.Keys)
-        {
-            int numberOfBalls = level_occurrences[key]; // Number of balls to arrange
-            int counter = 0;
-            float radius = 1f;
-
-            if((2 * Mathf.Sin(Mathf.PI / numberOfBalls)) > 0)
-            {
-               radius = previousRadius + (ballDiameter / (2 * Mathf.Sin(Mathf.PI / numberOfBalls))); // Calculate the radius
-            }
-
-            for (int i = 0; i < dataObjects.Count; i++)
-            {
-                if (key == dataObjects[i].level)
-                {
-                    float angleOffset = 0;
-
-                    if (dataObjects[i].parent.Count > 0)
-                    {
-                        angleOffset = CalculateAngularOffset(dataObjects[i], dataObjects[i].parent[0]);
-                    }
-
-                    float angle = angleOffset + counter * Mathf.PI * 2 / numberOfBalls;
-                    float x = Mathf.Cos(angle) * radius;
-                    float z = Mathf.Sin(angle) * radius;
-
-                    Vector3 position = new Vector3(x, 0 + incHeight, z);  // Assuming the circle is on the XZ plane
-
-                    dataObjects[i].DataBall.transform.position = position;
-                    counter++;
-                }
-
-            }
-            incHeight += 2;
-            previousRadius = radius + ballDiameter;
-        }
-        }*/
     }
 
 
