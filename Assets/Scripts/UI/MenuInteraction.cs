@@ -12,6 +12,7 @@ using UnityEngine.Networking;
 using Microsoft.MixedReality.Toolkit.Experimental.UI;
 using System;
 using static UnityEngine.GraphicsBuffer;
+using Unity.XR.CoreUtils;
 public class MenuInteraction : MonoBehaviour
 {
 
@@ -453,6 +454,26 @@ public class MenuInteraction : MonoBehaviour
     {
         var bounds = obj.GetComponent<Renderer>().bounds;
         return bounds.extents.x;
+    }
+
+    public void ShowNodePositionInMenu(GameObject ball)
+    {
+        foreach (GraphReader graph in sbomList) { 
+            foreach(DataObject dobj in graph.dataObjects)
+            {
+                if (ball == dobj.DataBall.GetNamedChild("Ball"))
+                {
+                    Debug.Log(dobj.key + " : " + dobj.value);
+
+                    MakeSameNodesGlow(dobj);
+                }
+            }
+        }
+    }
+
+    public void MakeSameNodesGlow(DataObject dobj)
+    {
+
     }
 
 }
