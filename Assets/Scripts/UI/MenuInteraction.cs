@@ -124,7 +124,23 @@ public class MenuInteraction : MonoBehaviour
             text.text = name;
             text.fontSize = 7;
 
-            btn.GetComponent<UnityEngine.UI.Button>().onClick.AddListener(() => SelectSBOM(text.text));
+            UnityEngine.Color lightRed = new UnityEngine.Color(1f, 0.3f, 0.3f);
+            UnityEngine.UI.Image img = btn.GetComponent<UnityEngine.UI.Image>();
+            img.color = lightRed;
+
+            btn.GetComponent<UnityEngine.UI.Button>().onClick.AddListener(() => {
+
+                if(img.color == UnityEngine.Color.green)
+                {
+                    img.color = lightRed;
+                } 
+                else
+                {
+                    img.color = UnityEngine.Color.green;
+                }
+
+                SelectSBOM(text.text); 
+            });
         }
     }
 

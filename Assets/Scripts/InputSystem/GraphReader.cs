@@ -290,12 +290,10 @@ public class GraphReader
 
     public void ProcessLevelOccurence(int num)
     {
-        // If the number is already in the dictionary, increment its count
         if (level_occurrences.ContainsKey(num))
         {
             level_occurrences[num]++;
         }
-        // Otherwise, add it to the dictionary with count 1
         else
         {
             level_occurrences[num] = 1;
@@ -411,10 +409,7 @@ public class GraphReader
     {
         foreach (DataObject node in dataObjects)
         {
-            //node.DataBall.transform.position += (node.velocity * Time.deltaTime);
             node.DataBall.transform.position += node.velocity;
-            //Vector3 vec = new Vector3(1f, 1f, 1f);
-            //node.DataBall.transform.position = Vector3.Scale(node.DataBall.transform.position, vec);
         }
     }
 

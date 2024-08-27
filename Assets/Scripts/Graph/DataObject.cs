@@ -15,10 +15,7 @@ public class DataObject
     public bool isExpanded = true;
     public Vector3 velocity;
     public string suffix = "";
-    //public Vector3 line_position1, line_position2;
-    //public List<DataObject> children;
 
-    // ALle Objekte mit Bälle auf einen Punkt generieren und in Liste speichern => Bälle positionieren und parallel Beziehungen über Linien erstellen
 
     public DataObject(GameObject ball,int lvl,string key, string value, DataObject p)
     {
