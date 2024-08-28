@@ -15,16 +15,17 @@ public class DataObject
     public bool isExpanded = true;
     public Vector3 velocity;
     public string suffix = "";
+    public int lineNumber = 0;
 
 
-    public DataObject(GameObject ball,int lvl,string key, string value, DataObject p)
+    public DataObject(GameObject ball,int lvl,string key, string value, DataObject p, int lineNumber)
     {
         this.DataBall = ball;
         this.level = lvl;
         this.key = key;
         this.value = value;
         this.velocity = Vector3.zero;
-
+        this.lineNumber = lineNumber;
         if (p != null)
         {
             this.parent.Add(p);

@@ -34,7 +34,7 @@ public class GraphReader
     public Vector3 graphMax = Vector3.zero;
 
     public bool isCVE = false;
-
+    public int lineCounter = 0;
     public void CreateGraph(string sbomElement, string graphType, bool showDuplicateNodes)
     {
         Initialization();
@@ -76,6 +76,7 @@ public class GraphReader
         level_occurrences.Clear();
         colors.Clear();
         categoryBalls.Clear();
+        lineCounter = 0;
     }
 
     public void ReadFileAndCreateObjects(string sbomElement)
@@ -97,6 +98,8 @@ public class GraphReader
 
     public DataObject CreateDataObjectWithBall(int level, string key, string value, DataObject parent)
     {
+        lineCounter++;
+
         GameObject dataPoint = MonoBehaviour.Instantiate(BallPrefab, new Vector3(1, 1, 1), Quaternion.identity);
         TextMeshPro text = dataPoint.GetComponentInChildren<TextMeshPro>();
 
@@ -118,7 +121,7 @@ public class GraphReader
             //Debug.Log(parent.level + 1);
         }
 
-        return new DataObject(dataPoint,level,key,value,parent);
+        return new DataObject(dataPoint,level,key,value,parent,lineCounter);
     }
 
     //Creates DataObjects and corresponding 3D Balls recursively through JSON 

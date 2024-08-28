@@ -19,6 +19,7 @@ public class MenuInteraction : MonoBehaviour
     public BackendDataHandler dbHandler;
 
     public GameObject scrollViewContent;
+    public GameObject scrollViewContentPositions;
     public GameObject buttonTemplate;
 
     public UnityEngine.UI.Slider sliderLevel;
@@ -27,6 +28,7 @@ public class MenuInteraction : MonoBehaviour
     public TMP_InputField inputSearch;
 
     public TMP_Dropdown dropdown;
+    public TMP_Dropdown dropdownPositions;
 
     public UnityEngine.UI.Toggle showCWEToggle;
     public UnityEngine.UI.Toggle showDuplicateNodesToggle;
@@ -38,11 +40,13 @@ public class MenuInteraction : MonoBehaviour
 
     public GameObject camSphere;
 
+    public Dictionary<string, string> textsPosition = new Dictionary<string, string>();
+
     // Start is called before the first frame update
     void Start()
     {
         AddScrollviewContent();
-
+        dropdown.onValueChanged.AddListener(OnDropdownValueChanged);
     }
 
     // Update is called once per frame
@@ -466,6 +470,7 @@ public class MenuInteraction : MonoBehaviour
                     Debug.Log(dobj.key + " : " + dobj.value);
 
                     MakeSameNodesGlow(dobj);
+                    ShowPositionInJson(dobj, graph);
                 }
             }
         }
@@ -474,6 +479,54 @@ public class MenuInteraction : MonoBehaviour
     public void MakeSameNodesGlow(DataObject dobj)
     {
 
+    }
+
+    public void ShowPositionInJson(DataObject dobj, GraphReader graph)
+    {
+        int pos = 0;
+        dropdownPositions.options.Clear();
+        textsPosition.Clear();
+
+
+        foreach (DataObject parent in dobj.parent)
+        {
+            string displayText = "";
+
+            Debug.Log("----------------------------------");
+
+            foreach (DataObject other in graph.dataObjects)
+            {
+                if(other.parent.Contains(parent))
+                {
+                    displayText += "<color=#005500>" + other.key + "</color> : " + other.value + "\n";
+                }
+            }
+            pos++;
+            TMP_Dropdown.OptionData newOption = new TMP_Dropdown.OptionData("Position " + pos);
+            dropdownPositions.options.Add(newOption);
+            textsPosition.Add("Position " + pos, displayText);
+        }
+
+        dropdownPositions.captionText.text = "Position 1";
+        AddTextToScrollContent(textsPosition["Position 1"]);
+    }
+
+    public void OnDropdownValueChanged(int index)
+    {
+        if (textsPosition.Count > 0) 
+        {
+            Debug.Log("Selected option: " + dropdown.options[index].text);
+            AddTextToScrollContent(textsPosition[dropdown.options[index].text]);
+
+        }
+
+    }
+
+    public void AddTextToScrollContent(string text)
+    {
+
+        TextMeshProUGUI textUI = scrollViewContentPositions.GetComponent<TextMeshProUGUI>();
+        textUI.text = text;
     }
 
 }
