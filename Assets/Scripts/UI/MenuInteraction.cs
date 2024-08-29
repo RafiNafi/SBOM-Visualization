@@ -46,7 +46,7 @@ public class MenuInteraction : MonoBehaviour
     void Start()
     {
         AddScrollviewContent();
-        dropdown.onValueChanged.AddListener(OnDropdownValueChanged);
+        dropdownPositions.onValueChanged.AddListener(OnDropdownValueChanged);
     }
 
     // Update is called once per frame
@@ -348,22 +348,6 @@ public class MenuInteraction : MonoBehaviour
 
     public void PositionAllGraphs(List<GraphReader> list)
     {
-        /*
-        for (int i = 0; i < sbomList.Count; i++)
-        {
-            float radius = 1f;
-
-            if (Mathf.Sin(Mathf.PI / sbomList.Count) > 0)
-            {
-                radius = CalculateMaxCircleRadius() / Mathf.Sin(Mathf.PI / sbomList.Count);
-            }
-            int graphCount = sbomList.Count;
-            float angle = (i * Mathf.PI * 2f) / graphCount;
-            Vector3 move = new Vector3(Mathf.Cos(angle) * radius, 0, Mathf.Sin(angle) * radius);
-            sbomList[i].AdjustEntireGraphPosition(move);
-        }
-        */
-        //float countRadius = (sbomList.Count * maxRadius) / 2;
 
         int multiplier = 1;
 
@@ -487,36 +471,93 @@ public class MenuInteraction : MonoBehaviour
         dropdownPositions.options.Clear();
         textsPosition.Clear();
 
-
-        foreach (DataObject parent in dobj.parent)
+        
+        if(dobj.parent.Count == 1 && showDuplicateNodesToggle.isOn)
         {
-            string displayText = "";
-
-            Debug.Log("----------------------------------");
-
             foreach (DataObject other in graph.dataObjects)
             {
-                if(other.parent.Contains(parent))
+                if(other.key == dobj.key && other.value == dobj.value)
                 {
-                    displayText += "<color=#005500>" + other.key + "</color> : " + other.value + "\n";
+                    string displayText = "";
+
+                    foreach (DataObject child in graph.dataObjects)
+                    {
+                        if (child.parent.Contains(other.parent[0]))
+                        {
+                            displayText += GetLineText(child, other);
+                        }
+                    }
+                    pos++;
+                    TMP_Dropdown.OptionData newOption = new TMP_Dropdown.OptionData("Position " + pos);
+                    dropdownPositions.options.Add(newOption);
+                    textsPosition.Add("Position " + pos, displayText);
                 }
             }
-            pos++;
-            TMP_Dropdown.OptionData newOption = new TMP_Dropdown.OptionData("Position " + pos);
-            dropdownPositions.options.Add(newOption);
-            textsPosition.Add("Position " + pos, displayText);
         }
+        else
+        {
+            foreach (DataObject parent in dobj.parent)
+            {
+                string displayText = "";
 
+                foreach (DataObject other in graph.dataObjects)
+                {
+                    if (other.parent.Contains(parent))
+                    {
+                        displayText += GetLineText(other, dobj);
+                    }
+                }
+                pos++;
+                TMP_Dropdown.OptionData newOption = new TMP_Dropdown.OptionData("Position " + pos);
+                dropdownPositions.options.Add(newOption);
+                textsPosition.Add("Position " + pos, displayText);
+            }
+        }
+       
         dropdownPositions.captionText.text = "Position 1";
         AddTextToScrollContent(textsPosition["Position 1"]);
     }
 
+
+    public string GetLineText(DataObject other, DataObject dobj)
+    {
+        string displayText = "";
+        string lineNumber = "";
+
+        if(showDuplicateNodesToggle.isOn)
+        {
+            lineNumber = "<color=#010101>" + other.lineNumber.ToString() + "\t </color>";
+        }
+
+        if (other == dobj)
+        {
+            displayText += lineNumber + "<color=#550000>" + other.key + " :</color> ";
+        }
+        else
+        {
+            displayText += lineNumber + "<color=#005500>" + other.key + " :</color> ";
+        }
+
+
+        if (other.value != "")
+        {
+            displayText += other.value + "\n";
+        }
+        else
+        {
+            displayText += "{...}" + "\n";
+        }
+
+        return displayText;
+    }
+
     public void OnDropdownValueChanged(int index)
     {
+
         if (textsPosition.Count > 0) 
         {
-            Debug.Log("Selected option: " + dropdown.options[index].text);
-            AddTextToScrollContent(textsPosition[dropdown.options[index].text]);
+            Debug.Log("Selected option: " + dropdownPositions.options[index].text);
+            AddTextToScrollContent(textsPosition[dropdownPositions.options[index].text]);
 
         }
 
