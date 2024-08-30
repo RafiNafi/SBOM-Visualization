@@ -128,6 +128,7 @@ public class MenuInteraction : MonoBehaviour
             TextMeshProUGUI text = btn.GetComponentInChildren<TextMeshProUGUI>();
             text.text = name;
             text.fontSize = 7;
+            text.margin = new Vector4(5,0,5,0);
 
             UnityEngine.Color lightRed = new UnityEngine.Color(1f, 0.3f, 0.3f);
             UnityEngine.UI.Image img = btn.GetComponent<UnityEngine.UI.Image>();
@@ -381,7 +382,7 @@ public class MenuInteraction : MonoBehaviour
 
             }
 
-            Vector3 adjustCategoriesEdge = new Vector3(list[i].BoundaryBox.GetComponent<Renderer>().bounds.min.x - 2, 0, list[i].BoundaryBox.GetComponent<Renderer>().bounds.min.z);
+            Vector3 adjustCategoriesEdge = new Vector3(list[i].BoundaryBox.GetComponent<Renderer>().bounds.max.x - 2, list[i].BoundaryBox.GetComponent<Renderer>().bounds.max.y + 1, list[i].BoundaryBox.GetComponent<Renderer>().bounds.min.z);
 
             PositionCategoryBalls(list[i], adjustCategoriesEdge - list[i].offsetCategories);
             list[i].offsetCategories = adjustCategoriesEdge;
@@ -541,11 +542,13 @@ public class MenuInteraction : MonoBehaviour
 
         if (other.value != "")
         {
-            displayText += other.value + "\n";
+            displayText += "<b>" + other.value + "</b>\n";
         }
-        else
+        else 
         {
-            displayText += "{...}" + "\n";
+            displayText += "<link=\"other.key\"><b>";
+            displayText += "{...}" + "</b></link>" + "\n";
+
         }
 
         return displayText;

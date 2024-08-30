@@ -575,9 +575,9 @@ public class GraphReader
 
     public void ColorDataBalls()
     {
+
         foreach (DataObject ball in dataObjects)
         {
-            //Debug.Log(ball.key.Substring(0, ball.key.Length - ball.suffix.Length));
 
             if (colors.ContainsKey(ball.key) || colors.ContainsKey(ball.key.Substring(0, ball.key.Length - ball.suffix.Length)))
             {
@@ -586,7 +586,8 @@ public class GraphReader
             } 
             else
             {
-                UnityEngine.Color c = UnityEngine.Random.ColorHSV();
+                //UnityEngine.Color c = UnityEngine.Random.ColorHSV();
+                UnityEngine.Color c = UnityEngine.Color.HSVToRGB(UnityEngine.Random.Range(0f, 1f), UnityEngine.Random.Range(0.1f, 1f), UnityEngine.Random.Range(0.2f, 1f));
 
                 // loop to lower chances for duplicate color
                 for (int i = 0; i < 10; i++)
@@ -597,9 +598,8 @@ public class GraphReader
                         break;
                     }
 
-                    c = UnityEngine.Random.ColorHSV();
+                    c = UnityEngine.Color.HSVToRGB(UnityEngine.Random.Range(0f, 1f), UnityEngine.Random.Range(0.1f, 1f), UnityEngine.Random.Range(0.2f, 1f));
                 }
-                
                 ball.DataBall.GetComponentInChildren<Renderer>().material.color = c;
                 colors.Add(ball.key.Substring(0, ball.key.Length - ball.suffix.Length), c);
             }
@@ -624,7 +624,7 @@ public class GraphReader
                 if(index < colors.Count)
                 {
 
-                    GameObject categoryPoint = MonoBehaviour.Instantiate(BallPrefab, new Vector3(1 - (x * 0.75f), 0 + (z * 0.5f) + (x%2) * 0.25f, 2 + (z * 0.5f) + (x%2) * 0.25f), Quaternion.identity);
+                    GameObject categoryPoint = MonoBehaviour.Instantiate(BallPrefab, new Vector3(1 - (x * 0.75f), 0, 2 + (z * 1f) + (x%2) * 0.25f), Quaternion.identity);
                     TextMeshPro text = categoryPoint.GetComponentInChildren<TextMeshPro>();
 
 
