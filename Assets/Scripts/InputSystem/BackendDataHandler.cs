@@ -114,4 +114,29 @@ public class BackendDataHandler : MonoBehaviour
             callback(null);
         }
     }
+
+
+    public IEnumerator GetDatabaseCompareDataByIds(string id1, string id2, string json, string field, System.Action<string, string, List<string>> callback)
+    {
+
+        UnityWebRequest request = new UnityWebRequest(BackendConnectionString + "/api/DB/SBOM/Compare/" + field + "/", "POST");
+        byte[] bodyRaw = System.Text.Encoding.UTF8.GetBytes(json);
+        request.uploadHandler = new UploadHandlerRaw(bodyRaw);
+        request.downloadHandler = new DownloadHandlerBuffer();
+        request.SetRequestHeader("Content-Type", "application/json");
+
+        yield return request.SendWebRequest();
+
+        if (request.result == UnityWebRequest.Result.Success)
+        {
+            Debug.Log(": Received: " + request.downloadHandler.text);
+            List<string> responseData = JsonConvert.DeserializeObject<List<string>>(request.downloadHandler.text);
+            callback(id1, id2, responseData);
+        }
+        else
+        {
+            Debug.Log(": Error: " + request.error);
+            callback(null, null, null);
+        }
+    }
 }

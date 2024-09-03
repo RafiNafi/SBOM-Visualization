@@ -49,6 +49,40 @@ namespace SBOM_Visualizer_Backend.Controllers
             return Ok(doc.ToString());
         }
 
+
+
+        [HttpPost("SBOM/Compare/{field}")]
+        public IActionResult GetCompareDatabaseDataByIds([FromBody] StringListWrapper stringsWrapper, string field)
+        {
+            List<string> CompareList = new List<string>();
+
+            if (stringsWrapper == null || stringsWrapper.strings == null)
+            {
+                return BadRequest("Invalid data.");
+            }
+
+            var client = new MongoClient(MongoDBConnectionString);
+            var database = client.GetDatabase(DBName);
+            var collection = database.GetCollection<BsonDocument>(CollectionSBOMName);
+
+
+            foreach (string id in stringsWrapper.strings)
+            {
+                var filter = Builders<BsonDocument>.Filter.Eq(field, ObjectId.Parse(id));
+
+                var doc = collection.Find(filter).First();
+
+                doc["_id"] = doc["_id"].ToString();
+
+                CompareList.Add(doc.ToString());
+            }
+
+            return Ok(CompareList);
+        }
+
+
+
+
         [HttpGet]
         public IActionResult GetOnlyAllDocumentNames()
         {

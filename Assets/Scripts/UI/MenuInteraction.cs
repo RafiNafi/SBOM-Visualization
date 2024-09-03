@@ -13,6 +13,9 @@ using Microsoft.MixedReality.Toolkit.Experimental.UI;
 using System;
 using static UnityEngine.GraphicsBuffer;
 using Unity.XR.CoreUtils;
+using static System.Net.Mime.MediaTypeNames;
+using static Unity.VisualScripting.Metadata;
+using System.Linq;
 public class MenuInteraction : MonoBehaviour
 {
 
@@ -41,6 +44,10 @@ public class MenuInteraction : MonoBehaviour
     public GameObject camSphere;
 
     public Dictionary<string, string> textsPosition = new Dictionary<string, string>();
+
+    public GameObject mainMenu;
+    public GameObject sbomMenu;
+    public TextMeshProUGUI sbomNameText;
 
     // Start is called before the first frame update
     void Start()
@@ -139,15 +146,80 @@ public class MenuInteraction : MonoBehaviour
                 if(img.color == UnityEngine.Color.green)
                 {
                     img.color = lightRed;
+                    SelectSBOM(text.text);
                 } 
                 else
                 {
-                    img.color = UnityEngine.Color.green;
+                    mainMenu.SetActive(false);
+                    sbomNameText.text = text.text;
+                    sbomMenu.SetActive(true);
+
                 }
 
-                SelectSBOM(text.text); 
             });
         }
+    }
+
+    public void AddDropwdownVersionContent()
+    {
+
+        List<GameObject> children = new List<GameObject>();
+        scrollViewContent.GetChildGameObjects(children);
+
+        TMP_Dropdown dropdownVersion1 = sbomMenu.GetNamedChild("Comparison").GetNamedChild("Version Selection").GetComponent<TMP_Dropdown>();
+        TMP_Dropdown dropdownVersion2 = sbomMenu.GetNamedChild("Comparison").GetNamedChild("Version Selection Other").GetComponent<TMP_Dropdown>();
+
+        dropdownVersion1.ClearOptions();
+        dropdownVersion2.ClearOptions();
+
+        foreach (GameObject btn in children)
+        {
+            TMP_Dropdown.OptionData newOption = new TMP_Dropdown.OptionData(btn.GetComponentInChildren<TextMeshProUGUI>().text);
+            dropdownVersion1.options.Add(newOption);
+            dropdownVersion2.options.Add(newOption);
+        }
+        
+        dropdownVersion1.value = dropdownVersion1.options.FindIndex(option => option.text == sbomNameText.text);
+        dropdownVersion2.value = dropdownVersion2.options.FindIndex(option => option.text == sbomNameText.text);
+    }
+
+    public void CreateSBOMButton()
+    {
+        List<GameObject> children = new List<GameObject>();
+        scrollViewContent.GetChildGameObjects(children);
+
+        foreach (GameObject btn in children)
+        {
+            if(btn.GetComponentInChildren<TextMeshProUGUI>().text == sbomNameText.text)
+            {
+                UnityEngine.UI.Image img = btn.GetComponent<UnityEngine.UI.Image>();
+                img.color = UnityEngine.Color.green;
+            }
+        }
+
+        UnityEngine.UI.Toggle t = sbomMenu.GetNamedChild("CompareToggle").GetComponent<UnityEngine.UI.Toggle>();
+
+        if (t.isOn)
+        {
+            TMP_Dropdown dropdownVersion1 = sbomMenu.GetNamedChild("Comparison").GetNamedChild("Version Selection").GetComponent<TMP_Dropdown>();
+            TMP_Dropdown dropdownVersion2 = sbomMenu.GetNamedChild("Comparison").GetNamedChild("Version Selection Other").GetComponent<TMP_Dropdown>();
+
+
+            List<string> ids = new List<string>();
+
+            ids.Add(dropdownVersion1.options[dropdownVersion1.value].text);
+            ids.Add(dropdownVersion2.options[dropdownVersion2.value].text);
+
+            string json = JsonUtility.ToJson(new StringListWrapper { strings = ids });
+
+            //CALL ENDPOINT TO GET BOTH JSON files
+            StartCoroutine(dbHandler.GetDatabaseCompareDataByIds(ids[0], ids[1], json, "_id", CompareSBOM));
+        } 
+        else
+        {
+            SelectSBOM(sbomNameText.text);
+        }
+
     }
 
     public void SelectSBOM(string name)
@@ -181,6 +253,171 @@ public class MenuInteraction : MonoBehaviour
         InitSliders();
         PositionAllGraphs(sbomList);
     }
+
+    public void CompareSBOM(string id1, string id2, List<String> sboms)
+    {
+        GraphReader Graph1 = new GraphReader();
+        GraphReader Graph2 = new GraphReader();
+        GraphReader newGraph = new GraphReader();
+
+        Graph1.BallPrefab = BallPrefab;
+        Graph2.BallPrefab = BallPrefab;
+        newGraph.BallPrefab = BallPrefab;
+
+        Graph1.dbid = id1;
+        Graph2.dbid = id2;
+
+        newGraph.dbid = id1;
+
+        Graph1.Initialization();
+        Graph1.ReadFileAndCreateObjects(sboms[0]);
+
+        Graph2.Initialization();
+        Graph2.ReadFileAndCreateObjects(sboms[1]);
+
+        newGraph.Initialization();
+        DataObject main_root = newGraph.CreateDataObjectWithBall(0, "ROOT", "", null);
+        newGraph.ProcessLevelOccurence(0);
+        newGraph.dataObjects.Add(main_root);
+
+        //Start Recursion With Root and make new combined Graph
+        RecursiveCompare(Graph1.dataObjects[0], Graph2.dataObjects[0], Graph1, Graph2, newGraph.dataObjects[0], newGraph);
+
+        newGraph.PositionDataBalls(dropdown.options[dropdown.value].text);
+        newGraph.ColorDataBalls();
+        newGraph.CreateCategories();
+
+        Debug.Log("ADDED -----");
+        foreach(DataObject d in AddedNodes)
+        {
+            Debug.Log(d.key + " : " + d.value);
+        }
+
+        Debug.Log("DELETED -----");
+        foreach (DataObject d in DeletedNodes)
+        {
+            Debug.Log(d.key + " : " + d.value);
+        }
+
+        Debug.Log("MODIFIED -----");
+        foreach (DataObject d in ModifiedNodes)
+        {
+            Debug.Log(d.key + " : " + d.value);
+        }
+
+        Graph1.Initialization();
+        Graph2.Initialization();
+
+        sbomList.Add(newGraph);
+        InitSliders();
+        PositionAllGraphs(sbomList);
+    }
+
+    public List<DataObject> AddedNodes { get; set; } = new List<DataObject>();
+    public List<DataObject> DeletedNodes { get; set; } = new List<DataObject>();
+    public List<DataObject> ModifiedNodes { get; set; } = new List<DataObject>();
+
+
+    public void RecursiveCompare(DataObject oldNode, DataObject newNode, GraphReader graph1, GraphReader graph2, DataObject newGraphNode, GraphReader newGraph)
+    {
+        List<DataObject> list1 = new List<DataObject>();
+        List<DataObject> list2 = new List<DataObject>();
+
+        foreach (DataObject other in graph1.dataObjects)
+        {
+            if(oldNode != null && other.parent.Count > 0)
+            {
+                if (other.parent[0] == oldNode)
+                {
+                    list1.Add(other);
+                }
+            }
+        }
+
+        foreach (DataObject other in graph2.dataObjects)
+        {
+            if(newNode != null && other.parent.Count > 0)
+            {
+                if (other.parent[0] == newNode)
+                {
+                    list2.Add(other);
+                }
+            }
+        }
+
+
+        // For Modified needed comparisson (newObj.key == oldObj.key && newObj.value != oldObj.value)
+        // Possible Problem: Multiple nodes that have same key and value in one layer
+
+        foreach (DataObject newObj in list2)
+        {
+
+            if (list1.Find(x => x.key == newObj.key && x.value == newObj.value) == null)
+            {
+                DataObject obj = newGraph.CreateDataObjectWithBall(newObj.level, newObj.key, newObj.value, newGraphNode);
+                newGraph.dataObjects.Add(obj);
+                List<GameObject> children = new List<GameObject>();
+                obj.DataBall.GetNamedChild("Ball").GetChildGameObjects(children);
+                children[1].SetActive(true);
+                RecursiveCompare(null, newObj, graph1, graph2, obj, newGraph);
+            }
+        }
+
+        foreach (DataObject oldObj in list1)
+        {
+
+            if (list2.Find(x => x.key == oldObj.key && x.value == oldObj.value) == null)
+            {
+                DataObject obj = newGraph.CreateDataObjectWithBall(oldObj.level, oldObj.key, oldObj.value, newGraphNode);
+                newGraph.dataObjects.Add(obj);
+                List<GameObject> children = new List<GameObject>();
+                obj.DataBall.GetNamedChild("Ball").GetChildGameObjects(children);
+                children[1].SetActive(true);
+                RecursiveCompare(oldObj, null, graph1, graph2, obj, newGraph);
+            }
+        }
+
+        foreach (DataObject oldObj in list1)
+        {
+            foreach (DataObject newObj in list2)
+            {
+                if (newObj.key == oldObj.key && newObj.value == oldObj.value)
+                {
+                    DataObject obj = newGraph.CreateDataObjectWithBall(oldObj.level, oldObj.key, oldObj.value, newGraphNode);
+                    newGraph.dataObjects.Add(obj);
+                    RecursiveCompare(oldObj, newObj, graph1, graph2, obj, newGraph);
+                }
+            }
+        }
+
+
+        if (oldNode == null && newNode == null) return;
+
+
+        if(oldNode == null && newNode != null)
+        {
+            AddedNodes.Add(newNode);
+            return;
+        }
+
+        if(oldNode != null && newNode == null)
+        {
+            DeletedNodes.Add(oldNode);
+            return;
+        }
+
+        if(oldNode.key == newNode.key)
+        {
+            if(oldNode.value != newNode.value)
+            {
+                ModifiedNodes.Add(newNode);
+                return;
+            }
+        }
+
+
+    }
+
 
     public void OpenKeyboard()
     {
