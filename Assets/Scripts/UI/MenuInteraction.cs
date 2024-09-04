@@ -280,6 +280,11 @@ public class MenuInteraction : MonoBehaviour
         newGraph.ProcessLevelOccurence(0);
         newGraph.dataObjects.Add(main_root);
 
+        //Initialization Lists
+        AddedNodes = new List<DataObject>();
+        DeletedNodes = new List<DataObject>();
+        ModifiedNodes = new List<DataObject>();
+
         //Start Recursion With Root and make new combined Graph
         RecursiveCompare(Graph1.dataObjects[0], Graph2.dataObjects[0], Graph1, Graph2, newGraph.dataObjects[0], newGraph);
 
@@ -287,8 +292,17 @@ public class MenuInteraction : MonoBehaviour
         newGraph.ColorDataBalls();
         newGraph.CreateCategories();
 
+        //Delete both Graphs
+        Graph1.Initialization();
+        Graph2.Initialization();
+
+        sbomList.Add(newGraph);
+        InitSliders();
+        PositionAllGraphs(sbomList);
+
+
         Debug.Log("ADDED -----");
-        foreach(DataObject d in AddedNodes)
+        foreach (DataObject d in AddedNodes)
         {
             Debug.Log(d.key + " : " + d.value);
         }
@@ -304,22 +318,16 @@ public class MenuInteraction : MonoBehaviour
         {
             Debug.Log(d.key + " : " + d.value);
         }
-
-        Graph1.Initialization();
-        Graph2.Initialization();
-
-        sbomList.Add(newGraph);
-        InitSliders();
-        PositionAllGraphs(sbomList);
     }
 
-    public List<DataObject> AddedNodes { get; set; } = new List<DataObject>();
-    public List<DataObject> DeletedNodes { get; set; } = new List<DataObject>();
-    public List<DataObject> ModifiedNodes { get; set; } = new List<DataObject>();
+    public List<DataObject> AddedNodes = new List<DataObject>();
+    public List<DataObject> DeletedNodes = new List<DataObject>();
+    public List<DataObject> ModifiedNodes = new List<DataObject>();
 
 
     public void RecursiveCompare(DataObject oldNode, DataObject newNode, GraphReader graph1, GraphReader graph2, DataObject newGraphNode, GraphReader newGraph)
     {
+        /*
         List<DataObject> list1 = new List<DataObject>();
         List<DataObject> list2 = new List<DataObject>();
 
@@ -344,52 +352,54 @@ public class MenuInteraction : MonoBehaviour
                 }
             }
         }
-
+        */
 
         // For Modified needed comparisson (newObj.key == oldObj.key && newObj.value != oldObj.value)
         // Possible Problem: Multiple nodes that have same key and value in one layer
 
-        foreach (DataObject newObj in list2)
+        if(oldNode != null && newNode != null)
         {
-
-            if (list1.Find(x => x.key == newObj.key && x.value == newObj.value) == null)
+            foreach (DataObject newObj in newNode.children)
             {
-                DataObject obj = newGraph.CreateDataObjectWithBall(newObj.level, newObj.key, newObj.value, newGraphNode);
-                newGraph.dataObjects.Add(obj);
-                List<GameObject> children = new List<GameObject>();
-                obj.DataBall.GetNamedChild("Ball").GetChildGameObjects(children);
-                children[1].SetActive(true);
-                RecursiveCompare(null, newObj, graph1, graph2, obj, newGraph);
+
+                if (oldNode.children.Find(x => x.key == newObj.key && x.value == newObj.value) == null)
+                {
+                    DataObject obj = newGraph.CreateDataObjectWithBall(newObj.level, newObj.key, newObj.value, newGraphNode);
+                    newGraph.dataObjects.Add(obj);
+                    List<GameObject> children = new List<GameObject>();
+                    obj.DataBall.GetNamedChild("Ball").GetChildGameObjects(children);
+                    children[2].SetActive(true);
+                    RecursiveCompare(null, newObj, graph1, graph2, obj, newGraph);
+                }
             }
-        }
 
-        foreach (DataObject oldObj in list1)
-        {
-
-            if (list2.Find(x => x.key == oldObj.key && x.value == oldObj.value) == null)
+            foreach (DataObject oldObj in oldNode.children)
             {
-                DataObject obj = newGraph.CreateDataObjectWithBall(oldObj.level, oldObj.key, oldObj.value, newGraphNode);
-                newGraph.dataObjects.Add(obj);
-                List<GameObject> children = new List<GameObject>();
-                obj.DataBall.GetNamedChild("Ball").GetChildGameObjects(children);
-                children[1].SetActive(true);
-                RecursiveCompare(oldObj, null, graph1, graph2, obj, newGraph);
-            }
-        }
 
-        foreach (DataObject oldObj in list1)
-        {
-            foreach (DataObject newObj in list2)
-            {
-                if (newObj.key == oldObj.key && newObj.value == oldObj.value)
+                if (newNode.children.Find(x => x.key == oldObj.key && x.value == oldObj.value) == null)
                 {
                     DataObject obj = newGraph.CreateDataObjectWithBall(oldObj.level, oldObj.key, oldObj.value, newGraphNode);
                     newGraph.dataObjects.Add(obj);
-                    RecursiveCompare(oldObj, newObj, graph1, graph2, obj, newGraph);
+                    List<GameObject> children = new List<GameObject>();
+                    obj.DataBall.GetNamedChild("Ball").GetChildGameObjects(children);
+                    children[1].SetActive(true);
+                    RecursiveCompare(oldObj, null, graph1, graph2, obj, newGraph);
+                }
+            }
+
+            foreach (DataObject oldObj in oldNode.children)
+            {
+                foreach (DataObject newObj in newNode.children)
+                {
+                    if (newObj.key == oldObj.key && newObj.value == oldObj.value)
+                    {
+                        DataObject obj = newGraph.CreateDataObjectWithBall(oldObj.level, oldObj.key, oldObj.value, newGraphNode);
+                        newGraph.dataObjects.Add(obj);
+                        RecursiveCompare(oldObj, newObj, graph1, graph2, obj, newGraph);
+                    }
                 }
             }
         }
-
 
         if (oldNode == null && newNode == null) return;
 

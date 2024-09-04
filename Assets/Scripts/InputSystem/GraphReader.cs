@@ -21,6 +21,7 @@ public class GraphReader
     public GameObject BoundaryBox;
 
     public string dbid;
+    public string sbomName;
 
     public List<DataObject> dataObjects = new List<DataObject>();
     public Dictionary<int, int> level_occurrences = new Dictionary<int, int>();
@@ -118,10 +119,17 @@ public class GraphReader
         {
             ProcessLevelOccurence(parent.level + 1);
             parent.nr_children++;
-            //Debug.Log(parent.level + 1);
+
         }
 
-        return new DataObject(dataPoint,level,key,value,parent,lineCounter);
+        DataObject newObj = new DataObject(dataPoint, level, key, value, parent, lineCounter);
+
+        if (parent != null)
+        {
+            parent.children.Add(newObj);
+        }
+
+        return newObj;
     }
 
     //Creates DataObjects and corresponding 3D Balls recursively through JSON 
@@ -176,6 +184,7 @@ public class GraphReader
                     catch(Exception e)
                     {
                         Debug.Log(Value);
+                        //Debug.Log(e);
                         var dict2 = JsonConvert.DeserializeObject<Dictionary<string, JToken>>("{"+"\"Contained Invalid Character\":\"\""+"}");
                         RecursiveRead(dict2, kv.Key, new_parent);
                     }

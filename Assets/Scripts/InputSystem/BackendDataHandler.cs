@@ -129,7 +129,7 @@ public class BackendDataHandler : MonoBehaviour
 
         if (request.result == UnityWebRequest.Result.Success)
         {
-            Debug.Log(": Received: " + request.downloadHandler.text);
+            //Debug.Log(": Received: " + request.downloadHandler.text);
             List<string> responseData = JsonConvert.DeserializeObject<List<string>>(request.downloadHandler.text);
             callback(id1, id2, responseData);
         }

@@ -16,7 +16,7 @@ public class DataObject
     public Vector3 velocity;
     public string suffix = "";
     public int lineNumber = 0;
-
+    public List<DataObject> children = new List<DataObject>();
 
     public DataObject(GameObject ball,int lvl,string key, string value, DataObject p, int lineNumber)
     {
