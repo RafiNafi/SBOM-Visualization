@@ -154,13 +154,17 @@ public class MenuInteraction : MonoBehaviour
                     sbomNameText.text = text.text;
                     sbomMenu.SetActive(true);
 
+                    if(sbomMenu.GetNamedChild("CompareToggle").GetComponent<UnityEngine.UI.Toggle>().isOn)
+                    {
+                        AddDropdownVersionContent();
+                    }
                 }
 
             });
         }
     }
 
-    public void AddDropwdownVersionContent()
+    public void AddDropdownVersionContent()
     {
 
         List<GameObject> children = new List<GameObject>();
@@ -177,10 +181,13 @@ public class MenuInteraction : MonoBehaviour
             TMP_Dropdown.OptionData newOption = new TMP_Dropdown.OptionData(btn.GetComponentInChildren<TextMeshProUGUI>().text);
             dropdownVersion1.options.Add(newOption);
             dropdownVersion2.options.Add(newOption);
-        }
+        } 
         
         dropdownVersion1.value = dropdownVersion1.options.FindIndex(option => option.text == sbomNameText.text);
         dropdownVersion2.value = dropdownVersion2.options.FindIndex(option => option.text == sbomNameText.text);
+
+        dropdownVersion1.RefreshShownValue();
+        dropdownVersion2.RefreshShownValue();
     }
 
     public void CreateSBOMButton()
@@ -237,18 +244,16 @@ public class MenuInteraction : MonoBehaviour
                 return;
             }
         }
-
         StartCoroutine(dbHandler.GetDatabaseDataById(name, SBOMCreation));
     }
 
     public void SBOMCreation(string name, string bsonElements)
     {
-
         //else create new graph
         GraphReader newGraph = new GraphReader();
         newGraph.BallPrefab = BallPrefab;
-        newGraph.CreateGraph(bsonElements, dropdown.options[dropdown.value].text, showDuplicateNodesToggle.isOn);
         newGraph.dbid = name;
+        newGraph.CreateGraph(bsonElements, dropdown.options[dropdown.value].text, showDuplicateNodesToggle.isOn);
         sbomList.Add(newGraph);
         InitSliders();
         PositionAllGraphs(sbomList);
@@ -286,11 +291,12 @@ public class MenuInteraction : MonoBehaviour
         ModifiedNodes = new List<DataObject>();
 
         //Start Recursion With Root and make new combined Graph
-        RecursiveCompare(Graph1.dataObjects[0], Graph2.dataObjects[0], Graph1, Graph2, newGraph.dataObjects[0], newGraph);
+        RecursiveCompare(Graph1.dataObjects[0], Graph2.dataObjects[0], newGraph.dataObjects[0], Graph1, Graph2, newGraph);
 
         newGraph.PositionDataBalls(dropdown.options[dropdown.value].text);
         newGraph.ColorDataBalls();
         newGraph.CreateCategories();
+        newGraph.AddSbomLabel();
 
         //Delete both Graphs
         Graph1.Initialization();
@@ -300,7 +306,7 @@ public class MenuInteraction : MonoBehaviour
         InitSliders();
         PositionAllGraphs(sbomList);
 
-
+        /*
         Debug.Log("ADDED -----");
         foreach (DataObject d in AddedNodes)
         {
@@ -318,6 +324,7 @@ public class MenuInteraction : MonoBehaviour
         {
             Debug.Log(d.key + " : " + d.value);
         }
+        */
     }
 
     public List<DataObject> AddedNodes = new List<DataObject>();
@@ -325,34 +332,8 @@ public class MenuInteraction : MonoBehaviour
     public List<DataObject> ModifiedNodes = new List<DataObject>();
 
 
-    public void RecursiveCompare(DataObject oldNode, DataObject newNode, GraphReader graph1, GraphReader graph2, DataObject newGraphNode, GraphReader newGraph)
+    public void RecursiveCompare(DataObject oldNode, DataObject newNode, DataObject newGraphNode, GraphReader graph1, GraphReader graph2, GraphReader newGraph)
     {
-        /*
-        List<DataObject> list1 = new List<DataObject>();
-        List<DataObject> list2 = new List<DataObject>();
-
-        foreach (DataObject other in graph1.dataObjects)
-        {
-            if(oldNode != null && other.parent.Count > 0)
-            {
-                if (other.parent[0] == oldNode)
-                {
-                    list1.Add(other);
-                }
-            }
-        }
-
-        foreach (DataObject other in graph2.dataObjects)
-        {
-            if(newNode != null && other.parent.Count > 0)
-            {
-                if (other.parent[0] == newNode)
-                {
-                    list2.Add(other);
-                }
-            }
-        }
-        */
 
         // For Modified needed comparisson (newObj.key == oldObj.key && newObj.value != oldObj.value)
         // Possible Problem: Multiple nodes that have same key and value in one layer
@@ -369,7 +350,7 @@ public class MenuInteraction : MonoBehaviour
                     List<GameObject> children = new List<GameObject>();
                     obj.DataBall.GetNamedChild("Ball").GetChildGameObjects(children);
                     children[2].SetActive(true);
-                    RecursiveCompare(null, newObj, graph1, graph2, obj, newGraph);
+                    RecursiveCompare(null, newObj, obj, graph1, graph2, newGraph);
                 }
             }
 
@@ -383,7 +364,7 @@ public class MenuInteraction : MonoBehaviour
                     List<GameObject> children = new List<GameObject>();
                     obj.DataBall.GetNamedChild("Ball").GetChildGameObjects(children);
                     children[1].SetActive(true);
-                    RecursiveCompare(oldObj, null, graph1, graph2, obj, newGraph);
+                    RecursiveCompare(oldObj, null, obj, graph1, graph2, newGraph);
                 }
             }
 
@@ -395,7 +376,7 @@ public class MenuInteraction : MonoBehaviour
                     {
                         DataObject obj = newGraph.CreateDataObjectWithBall(oldObj.level, oldObj.key, oldObj.value, newGraphNode);
                         newGraph.dataObjects.Add(obj);
-                        RecursiveCompare(oldObj, newObj, graph1, graph2, obj, newGraph);
+                        RecursiveCompare(oldObj, newObj, obj, graph1, graph2,  newGraph);
                     }
                 }
             }

@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Drawing;
 using System.IO;
 using System.Linq;
+using System.Security.Policy;
 using TMPro;
 using Unity.VisualScripting;
 using UnityEngine;
@@ -21,7 +22,7 @@ public class GraphReader
     public GameObject BoundaryBox;
 
     public string dbid;
-    public string sbomName;
+    public string sbomName = "";
 
     public List<DataObject> dataObjects = new List<DataObject>();
     public Dictionary<int, int> level_occurrences = new Dictionary<int, int>();
@@ -36,6 +37,9 @@ public class GraphReader
 
     public bool isCVE = false;
     public int lineCounter = 0;
+
+    public GameObject sbomLabel;
+
     public void CreateGraph(string sbomElement, string graphType, bool showDuplicateNodes)
     {
         Initialization();
@@ -49,6 +53,7 @@ public class GraphReader
         PositionDataBalls(graphType);
         ColorDataBalls();
         CreateCategories();
+        AddSbomLabel();
     }
 
     public void Initialization()
@@ -71,6 +76,10 @@ public class GraphReader
         if (BoundaryBox != null)
         {
             MonoBehaviour.Destroy(BoundaryBox);
+        }
+        if(sbomLabel != null)
+        {
+            MonoBehaviour.Destroy (sbomLabel);
         }
 
         dataObjects.Clear();
@@ -538,7 +547,7 @@ public class GraphReader
         }
 
 
-        //move boundary box pos
+        //Move boundary box pos
         LineRenderer cubeRenderer = BoundaryBox.GetComponent<LineRenderer>();
 
         int positionCount = cubeRenderer.positionCount;
@@ -551,6 +560,12 @@ public class GraphReader
         }
 
         cubeRenderer.SetPositions(positions);
+
+        //Set Label Pos
+        sbomLabel.transform.localPosition = new Vector3(BoundaryBox.GetComponent<Renderer>().bounds.min.x + 0.5f,
+            BoundaryBox.GetComponent<Renderer>().bounds.min.y, (BoundaryBox.GetComponent<Renderer>().bounds.max.z + BoundaryBox.GetComponent<Renderer>().bounds.min.z) / 2);
+
+        AdjustTextFontSize();
     }
 
 
@@ -677,5 +692,98 @@ public class GraphReader
 
             BoundaryBox = ld.DrawCube(graphMin + new Vector3(-1,-1,-1), graphMax + new Vector3(1, 1, 1));
         }
+    }
+
+    public void AddSbomLabel()
+    {
+        sbomLabel = new GameObject();
+
+        TextMeshPro sbomLabelText = sbomLabel.AddComponent<TextMeshPro>();
+        sbomLabel.transform.localRotation = Quaternion.Euler(0, 90, 0);
+        sbomLabel.transform.localPosition = new Vector3(BoundaryBox.GetComponent<Renderer>().bounds.min.x + 0.5f,
+    BoundaryBox.GetComponent<Renderer>().bounds.min.y, (BoundaryBox.GetComponent<Renderer>().bounds.max.z + BoundaryBox.GetComponent<Renderer>().bounds.min.z) / 2);
+
+        ContentSizeFitter contentFitter = sbomLabel.AddComponent<ContentSizeFitter>();
+        contentFitter.horizontalFit = ContentSizeFitter.FitMode.PreferredSize;
+        contentFitter.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
+
+        sbomLabelText.text = dbid;
+        sbomLabelText.fontSize = 8;
+        sbomLabelText.alignment = TextAlignmentOptions.Center;
+        sbomLabelText.color = new UnityEngine.Color(0.1f, 0.1f, 0.1f, 0.9f);
+
+        AdjustTextFontSize();
+    }
+
+    public void AdjustTextFontSize()
+    {
+        TextMeshPro sbomLabelText = sbomLabel.GetComponent<TextMeshPro>();
+        float value = Mathf.Abs(BoundaryBox.GetComponent<Renderer>().bounds.max.z - BoundaryBox.GetComponent<Renderer>().bounds.min.z);
+
+        while (true)
+        {
+            if (value - sbomLabelText.preferredWidth < 1)
+            {
+                sbomLabelText.fontSize -= 0.2f;
+
+                if (sbomLabelText.fontSize == 1) break;
+            }
+            else
+            {
+                break;
+            }
+        }
+
+        while(true)
+        {
+            if (value - sbomLabelText.preferredWidth > 2)
+            {
+                sbomLabelText.fontSize += 0.2f;
+            }
+            else
+            {
+                break;
+            }
+        }
+
+        sbomLabel.transform.localPosition += new Vector3(0, (sbomLabelText.fontSize * 0.05f) + 1.5f , 0);
+
+        //sbomLabel.transform.localPosition += new Vector3(0, sbomLabelText.preferredHeight, 0);
+
+        /*
+        MeshFilter meshFilter = sbomLabelText.GetComponent<MeshFilter>();
+
+        if (meshFilter != null && meshFilter.mesh != null)
+        {
+            Vector3[] vertices = meshFilter.mesh.vertices;
+            float minY = Mathf.Infinity;
+
+            foreach (Vector3 vertex in vertices)
+            {
+                Vector3 worldVertex = sbomLabel.transform.TransformPoint(vertex);
+
+                if (worldVertex.y < minY)
+                {
+                    minY = worldVertex.y;
+                }
+            }
+
+            Vector3 bottomCoordinate = new Vector3(sbomLabel.transform.position.x, minY, sbomLabel.transform.position.z);
+
+            Debug.Log("Bottom Coord: " + bottomCoordinate);
+
+            if(!float.IsInfinity(bottomCoordinate.y))
+            {
+                float difference = Mathf.Abs(bottomCoordinate.y - BoundaryBox.GetComponent<Renderer>().bounds.min.y);
+
+                if (difference > 0)
+                {
+                    sbomLabel.transform.localPosition += new Vector3(0, difference, 0);
+                }
+            }
+        }
+        */
+
+        Canvas.ForceUpdateCanvases();
     }
 }
