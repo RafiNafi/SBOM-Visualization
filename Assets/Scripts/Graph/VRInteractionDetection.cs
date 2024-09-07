@@ -16,12 +16,12 @@ public class VRInteractionDetection : MonoBehaviour
 
     void Update()
     {
-        if (IsTriggerPressed(controller))
+        if (IsTriggerPressed(controllerRight))
         {
             // Prevent multiple clicks
             if (IsClickAllowed())
             {
-                Ray ray = new Ray(controller.transform.position, controller.transform.forward);
+                Ray ray = new Ray(controllerRight.transform.position, controllerRight.transform.forward);
                 RaycastHit hit;
 
                 if (Physics.Raycast(ray, out hit))
@@ -35,7 +35,7 @@ public class VRInteractionDetection : MonoBehaviour
                 }
             }
         }
-
+        /*
         if (IsTriggerPressed(controllerRight))
         {
             if (IsClickAllowed())
@@ -64,7 +64,9 @@ public class VRInteractionDetection : MonoBehaviour
                     }
                 }
             }
+        
         }
+        */
     }
 
     bool IsClickAllowed()

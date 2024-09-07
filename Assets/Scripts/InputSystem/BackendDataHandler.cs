@@ -48,7 +48,7 @@ public class BackendDataHandler : MonoBehaviour
     }
 
 
-    public IEnumerator GetOnlyAllDocumentNames(System.Action<List<string>> callback)
+    public IEnumerator GetOnlyAllDocumentNames(System.Action<List<(string, string)>> callback)
     {
 
         using (UnityWebRequest webRequest = UnityWebRequest.Get(BackendConnectionString + "/api/DB/"))
@@ -58,16 +58,32 @@ public class BackendDataHandler : MonoBehaviour
             if (webRequest.result == UnityWebRequest.Result.ConnectionError)
             {
                 Debug.Log(": Error: " + webRequest.error);
+
                 callback(null);
             }
             else
             {
                 Debug.Log(": Received: " + webRequest.downloadHandler.text);
-                List<string> responseData = JsonConvert.DeserializeObject<List<string>>(webRequest.downloadHandler.text);
-                callback(responseData);
+
+                List<ShortSBOMData> responseData = JsonConvert.DeserializeObject<List<ShortSBOMData>>(webRequest.downloadHandler.text);
+                List<(string, string)> list = new List<(string, string)>();
+
+                foreach (var item in responseData)
+                {
+                    list.Add((item.FieldId,item.FieldName));
+                }
+
+                callback(list);
             }
         }
     }
+
+    public class ShortSBOMData
+    {
+        public string FieldId { get; set; }
+        public string FieldName { get; set; }
+    }
+
 
 
     public IEnumerator GetCVEDataBySubstringAndField(string searchCWE, string field, System.Action<List<string>> callback)

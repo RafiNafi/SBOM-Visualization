@@ -16,6 +16,7 @@ using Unity.XR.CoreUtils;
 using static System.Net.Mime.MediaTypeNames;
 using static Unity.VisualScripting.Metadata;
 using System.Linq;
+using System.Xml;
 public class MenuInteraction : MonoBehaviour
 {
 
@@ -48,6 +49,12 @@ public class MenuInteraction : MonoBehaviour
     public GameObject mainMenu;
     public GameObject sbomMenu;
     public TextMeshProUGUI sbomNameText;
+
+    public GameObject jsonMenu;
+    public bool activateWindow = false;
+
+    public GameObject previousClickedBtn;
+    public List<(string, GameObject, TMP_Dropdown.OptionData)> selectionlist = new List<(string, GameObject, TMP_Dropdown.OptionData)>();
 
     // Start is called before the first frame update
     void Start()
@@ -126,14 +133,28 @@ public class MenuInteraction : MonoBehaviour
 
     }
 
-    public void AddScrollContent(List<string> list)
+    public void AddScrollContent(List<(string,string)> list)
     {
-        foreach (string name in list)
+
+        foreach ((string id, string name) in list)
         {
             GameObject btn = Instantiate(buttonTemplate, scrollViewContent.transform);
 
             TextMeshProUGUI text = btn.GetComponentInChildren<TextMeshProUGUI>();
-            text.text = name;
+
+            text.enableAutoSizing = true;
+            text.fontSizeMax = 7;
+            text.fontSizeMin = 2;
+
+            if(name != "")
+            {
+                text.text = name;
+            }
+            else
+            {
+                text.text = id;
+            }
+
             text.fontSize = 7;
             text.margin = new Vector4(5,0,5,0);
 
@@ -141,12 +162,18 @@ public class MenuInteraction : MonoBehaviour
             UnityEngine.UI.Image img = btn.GetComponent<UnityEngine.UI.Image>();
             img.color = lightRed;
 
+
+            selectionlist.Add((id,btn,null));
+
+
             btn.GetComponent<UnityEngine.UI.Button>().onClick.AddListener(() => {
 
-                if(img.color == UnityEngine.Color.green)
+                previousClickedBtn = btn;
+
+                if (img.color == UnityEngine.Color.green)
                 {
                     img.color = lightRed;
-                    SelectSBOM(text.text);
+                    SelectSBOM(selectionlist[getIndexByButton(btn)].Item1);
                 } 
                 else
                 {
@@ -162,6 +189,19 @@ public class MenuInteraction : MonoBehaviour
 
             });
         }
+    }
+
+    public int getIndexByButton(GameObject obj)
+    {
+        for (int index=0; index < selectionlist.Count; index++)
+        {
+            if (obj == selectionlist[index].Item2)
+            {
+                return index;
+            }
+        }
+
+        return -1;
     }
 
     public void AddDropdownVersionContent()
@@ -181,10 +221,13 @@ public class MenuInteraction : MonoBehaviour
             TMP_Dropdown.OptionData newOption = new TMP_Dropdown.OptionData(btn.GetComponentInChildren<TextMeshProUGUI>().text);
             dropdownVersion1.options.Add(newOption);
             dropdownVersion2.options.Add(newOption);
-        } 
-        
-        dropdownVersion1.value = dropdownVersion1.options.FindIndex(option => option.text == sbomNameText.text);
-        dropdownVersion2.value = dropdownVersion2.options.FindIndex(option => option.text == sbomNameText.text);
+
+            selectionlist[getIndexByButton(btn)] = (selectionlist[getIndexByButton(btn)].Item1, btn, newOption);
+        }
+
+
+        dropdownVersion1.value = dropdownVersion1.options.FindIndex(option => option == selectionlist[getIndexByButton(previousClickedBtn)].Item3);
+        dropdownVersion2.value = dropdownVersion2.options.FindIndex(option => option == selectionlist[getIndexByButton(previousClickedBtn)].Item3);
 
         dropdownVersion1.RefreshShownValue();
         dropdownVersion2.RefreshShownValue();
@@ -197,7 +240,7 @@ public class MenuInteraction : MonoBehaviour
 
         foreach (GameObject btn in children)
         {
-            if(btn.GetComponentInChildren<TextMeshProUGUI>().text == sbomNameText.text)
+            if(btn == previousClickedBtn)
             {
                 UnityEngine.UI.Image img = btn.GetComponent<UnityEngine.UI.Image>();
                 img.color = UnityEngine.Color.green;
@@ -214,8 +257,19 @@ public class MenuInteraction : MonoBehaviour
 
             List<string> ids = new List<string>();
 
-            ids.Add(dropdownVersion1.options[dropdownVersion1.value].text);
-            ids.Add(dropdownVersion2.options[dropdownVersion2.value].text);
+            
+
+            for (int index = 0; index < selectionlist.Count; index++)
+            {
+                if (dropdownVersion1.options[dropdownVersion1.value] == selectionlist[index].Item3)
+                {
+                    ids.Add(selectionlist[index].Item1);
+                }
+                if(dropdownVersion2.options[dropdownVersion2.value] == selectionlist[index].Item3)
+                {
+                    ids.Add(selectionlist[index].Item1);
+                }
+            }
 
             string json = JsonUtility.ToJson(new StringListWrapper { strings = ids });
 
@@ -224,7 +278,7 @@ public class MenuInteraction : MonoBehaviour
         } 
         else
         {
-            SelectSBOM(sbomNameText.text);
+            SelectSBOM(selectionlist[getIndexByButton(previousClickedBtn)].Item1);
         }
 
     }
@@ -430,12 +484,12 @@ public class MenuInteraction : MonoBehaviour
                 {
                     if (!obj.key.Contains(text) && !obj.value.Contains(text))
                     {
-                        ChangeNodeTransparency(obj, 0.2f, 0.2f);
+                        ChangeNodeTransparency(obj, 0.2f, 0.2f, 0.3f);
 
                     }
                     else
                     {
-                        ChangeNodeTransparency(obj, 1f, 0.9f);
+                        ChangeNodeTransparency(obj, 1f, 0.9f, 1f);
                     }
                 }
             }
@@ -443,13 +497,13 @@ public class MenuInteraction : MonoBehaviour
             {
                 foreach (DataObject obj in graph.dataObjects)
                 {
-                    ChangeNodeTransparency(obj, 1f, 0.9f);
+                    ChangeNodeTransparency(obj, 1f, 0.9f,1f);
                 }
             }
         }
     }
 
-    public void ChangeNodeTransparency(DataObject obj, float valueBall, float valueLines) 
+    public void ChangeNodeTransparency(DataObject obj, float valueBall, float valueLines, float valueText) 
     {
         UnityEngine.Color c = obj.DataBall.GetComponentInChildren<Renderer>().material.color;
         c.a = valueBall;
@@ -462,6 +516,11 @@ public class MenuInteraction : MonoBehaviour
             line.GetComponent<LineRenderer>().endColor = new UnityEngine.Color(0, 0, 1, valueLines);
         }
 
+        TextMeshPro t = obj.DataBall.GetNamedChild("Ball").GetNamedChild("Text").GetComponent<TextMeshPro>();
+
+        UnityEngine.Color currentColor = t.color;
+        currentColor.a = valueText;
+        t.color = currentColor;
     }
 
     public void ChangeGraphStyle()
@@ -682,16 +741,45 @@ public class MenuInteraction : MonoBehaviour
                 {
                     Debug.Log(dobj.key + " : " + dobj.value);
 
-                    MakeSameNodesGlow(dobj);
+                    MakeOtherNodesTransparent(dobj);
                     ShowPositionInJson(dobj, graph);
+                    activateWindow = true;
+                    jsonMenu.SetActive(activateWindow);
+                    return;
                 }
             }
         }
     }
 
-    public void MakeSameNodesGlow(DataObject dobj)
+    public void MakeOtherNodesTransparent(DataObject dobj)
     {
+        foreach (GraphReader graph in sbomList)
+        {
+            foreach (DataObject other in graph.dataObjects)
+            {
+                if(other.key != dobj.key && other.value != dobj.value)
+                {
+                    ChangeNodeTransparency(other, 0.2f, 0.2f, 0.3f);
+                }
+            }
+        }
+    }
 
+    public void CloseJSONPosWindow()
+    {
+        foreach (GraphReader graph in sbomList)
+        {
+            foreach (DataObject other in graph.dataObjects)
+            {
+                ChangeNodeTransparency(other, 1f, 0.9f, 1f);
+            }
+        }
+        activateWindow = false;
+    }
+
+    public void CheckPosWindowVisibility()
+    {
+        jsonMenu.SetActive(activateWindow);
     }
 
     public void ShowPositionInJson(DataObject dobj, GraphReader graph)

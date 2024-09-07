@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Http;
+﻿using Amazon.Runtime;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using MongoDB.Bson;
 using MongoDB.Driver;
@@ -87,21 +88,41 @@ namespace SBOM_Visualizer_Backend.Controllers
         public IActionResult GetOnlyAllDocumentNames()
         {
 
-            List<string> names = new List<string>();
+            List<(string,string)> names = new List<(string, string)>();
 
             var client = new MongoClient(MongoDBConnectionString);
             var database = client.GetDatabase(DBName);
             var collection = database.GetCollection<BsonDocument>(CollectionSBOMName);
 
-            var projection = Builders<BsonDocument>.Projection.Include("_id");
+            var projection = Builders<BsonDocument>.Projection.Include("_id").Include("name");
             var docs = collection.Find(new BsonDocument()).Project(projection).ToList();
 
             foreach (var document in docs)
             {
-                names.Add(document["_id"].ToString());
+                document.TryGetElement("name", out var name);
+                if(name.Value != null)
+                {
+                    names.Add((document["_id"].ToString(), name.Value.ToString()));
+                }
+                else
+                {
+                    names.Add((document["_id"].ToString(), ""));
+                }
             }
 
-            return Ok(names);
+            var responseList = names.Select(t => new ShortSBOMData
+            {
+                FieldId = t.Item1,
+                FieldName = t.Item2
+            }).ToList();
+
+            return Ok(responseList);
+        }
+
+        public class ShortSBOMData
+        {
+            public string FieldId { get; set; }
+            public string FieldName { get; set; }
         }
 
         [HttpGet("{value}/{field}")]

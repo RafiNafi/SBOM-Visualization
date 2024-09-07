@@ -22,7 +22,6 @@ public class GraphReader
     public GameObject BoundaryBox;
 
     public string dbid;
-    public string sbomName = "";
 
     public List<DataObject> dataObjects = new List<DataObject>();
     public Dictionary<int, int> level_occurrences = new Dictionary<int, int>();
@@ -724,9 +723,10 @@ public class GraphReader
         {
             if (value - sbomLabelText.preferredWidth < 1)
             {
+                if (sbomLabelText.fontSize == 1) break;
+
                 sbomLabelText.fontSize -= 0.2f;
 
-                if (sbomLabelText.fontSize == 1) break;
             }
             else
             {
@@ -738,6 +738,8 @@ public class GraphReader
         {
             if (value - sbomLabelText.preferredWidth > 2)
             {
+                if (sbomLabelText.fontSize >= 150) break;
+
                 sbomLabelText.fontSize += 0.2f;
             }
             else
