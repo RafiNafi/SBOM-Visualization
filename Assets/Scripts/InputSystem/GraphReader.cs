@@ -26,7 +26,7 @@ public class GraphReader
     public List<DataObject> dataObjects = new List<DataObject>();
     public Dictionary<int, int> level_occurrences = new Dictionary<int, int>();
     public LineDrawer ld;
-    public Dictionary<string, UnityEngine.Color> colors = new Dictionary<string, UnityEngine.Color>();
+    public static Dictionary<string, UnityEngine.Color> colors = new Dictionary<string, UnityEngine.Color>();
     public List<GameObject> categoryBalls = new List<GameObject>();
 
     public Vector3 offset = new Vector3(0, 0, 0);
@@ -83,7 +83,7 @@ public class GraphReader
 
         dataObjects.Clear();
         level_occurrences.Clear();
-        colors.Clear();
+        //colors.Clear();
         categoryBalls.Clear();
         lineCounter = 0;
     }
@@ -632,7 +632,19 @@ public class GraphReader
 
     public void CreateCategories()
     {
-        float sqrt_val = Mathf.Sqrt(colors.Count);
+        Dictionary<string, UnityEngine.Color> colorsLocal = new Dictionary<string, UnityEngine.Color>();
+        
+        foreach (DataObject ball in dataObjects) {
+            if(colors.ContainsKey(ball.key) || colors.ContainsKey(ball.key.Substring(0, ball.key.Length - ball.suffix.Length)))
+            {
+                if (!colorsLocal.ContainsKey(ball.key) && !colorsLocal.ContainsKey(ball.key.Substring(0, ball.key.Length - ball.suffix.Length)))
+                {
+                    colorsLocal.Add(ball.key.Substring(0, ball.key.Length - ball.suffix.Length), colors[ball.key.Substring(0, ball.key.Length - ball.suffix.Length)]);
+                }
+            } 
+        }
+
+        float sqrt_val = Mathf.Sqrt(colorsLocal.Count);
         int rounded_val = Mathf.CeilToInt(sqrt_val);
 
         //Debug.Log(rounded_val);
@@ -644,15 +656,15 @@ public class GraphReader
             {
                 int index = z * rounded_val + x;
 
-                if(index < colors.Count)
+                if(index < colorsLocal.Count)
                 {
 
                     GameObject categoryPoint = MonoBehaviour.Instantiate(BallPrefab, new Vector3(1 - (x * 0.75f), 0, 2 + (z * 1f) + (x%2) * 0.25f), Quaternion.identity);
                     TextMeshPro text = categoryPoint.GetComponentInChildren<TextMeshPro>();
 
 
-                    text.text = colors.ElementAt(index).Key;
-                    categoryPoint.GetComponentInChildren<Renderer>().material.color = colors.ElementAt(index).Value;
+                    text.text = colorsLocal.ElementAt(index).Key;
+                    categoryPoint.GetComponentInChildren<Renderer>().material.color = colorsLocal.ElementAt(index).Value;
 
                     categoryPoint.transform.localScale = new Vector3(0.5f, 0.5f, 0.5f);
 
@@ -738,7 +750,7 @@ public class GraphReader
         {
             if (value - sbomLabelText.preferredWidth > 2)
             {
-                if (sbomLabelText.fontSize >= 150) break;
+                if (sbomLabelText.fontSize >= 120) break;
 
                 sbomLabelText.fontSize += 0.2f;
             }
