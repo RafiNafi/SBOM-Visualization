@@ -1,7 +1,9 @@
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using TMPro;
 using UnityEngine;
+using UnityEngine.EventSystems;
 using UnityEngine.XR.Interaction.Toolkit;
 using static Unity.Burst.Intrinsics.X86.Avx;
 
@@ -10,63 +12,62 @@ public class VRInteractionDetection : MonoBehaviour
     public ActionBasedController controller;
     public MenuInteraction menu;
     public ActionBasedController controllerRight;
+    public GameObject jsonMenu;
+
+    public XRRayInteractor rayInteractor;
+    public Camera cam;
+    public GameObject scrollViewContent;
 
     public float cooldownTime = 1.0f; 
     private float lastClickTime = 0f;
 
     void Update()
     {
-        if (IsTriggerPressed(controllerRight))
+        if(!jsonMenu.activeSelf)
         {
-            // Prevent multiple clicks
-            if (IsClickAllowed())
+            if (IsTriggerPressed(controllerRight))
             {
-                Ray ray = new Ray(controllerRight.transform.position, controllerRight.transform.forward);
-                RaycastHit hit;
-
-                if (Physics.Raycast(ray, out hit))
+                // Prevent multiple clicks
+                if (IsClickAllowed())
                 {
-                    if (hit.collider != null)
-                    {
-                        lastClickTime = Time.time;
-                        Debug.Log("Interacted: " + hit.collider.gameObject.name);
-                        menu.ShowNodePositionInMenu(hit.collider.gameObject);
-                    }
-                }
-            }
-        }
-        /*
-        if (IsTriggerPressed(controllerRight))
-        {
-            if (IsClickAllowed())
-            {
-                Ray ray = new Ray(controller.transform.position, controller.transform.forward);
-                RaycastHit hit;
+                    Ray ray = new Ray(controllerRight.transform.position, controllerRight.transform.forward);
+                    RaycastHit hit;
 
-                if (Physics.Raycast(ray, out hit))
-                {
-                    if (hit.collider != null)
+                    if (Physics.Raycast(ray, out hit))
                     {
-                        lastClickTime = Time.time;
-                        Debug.Log("Interacted: " + hit.collider.gameObject.name);
-
-                        if (hit.transform.TryGetComponent<TextMeshProUGUI>(out TextMeshProUGUI tmp))
+                        if (hit.collider != null)
                         {
-                            int linkIndex = TMP_TextUtilities.FindIntersectingLink(tmp, hit.point, Camera.main);
-
-                            if (linkIndex != -1)
-                            {
-                                TMP_LinkInfo linkInfo = tmp.textInfo.linkInfo[linkIndex];
-                                Debug.Log("Clicked on link: " + linkInfo.GetLinkID());
-
-                            }
+                            lastClickTime = Time.time;
+                            Debug.Log("Interacted: " + hit.collider.gameObject.name);
+                            menu.ShowNodePositionInMenu(hit.collider.gameObject);
                         }
                     }
                 }
             }
-        
         }
-        */
+
+        UnityEngine.EventSystems.RaycastResult hitNew;
+        if (rayInteractor.TryGetCurrentUIRaycastResult(out hitNew))
+        {
+            TextMeshProUGUI text = scrollViewContent.GetComponent<TextMeshProUGUI>();
+
+            Debug.Log(hitNew.gameObject);
+
+            if (hitNew.gameObject != null && hitNew.gameObject == text.gameObject)
+            {
+                int linkIndex = TMP_TextUtilities.FindIntersectingLink(text, hitNew.worldPosition, cam);
+
+                Debug.Log(linkIndex);
+
+                if (linkIndex != -1) 
+                {
+                    TMP_LinkInfo linkInfo = text.textInfo.linkInfo[linkIndex];
+
+                    Debug.Log("Hovering over: " + linkInfo.GetLinkID());
+
+                }
+            }
+        }
     }
 
     bool IsClickAllowed()

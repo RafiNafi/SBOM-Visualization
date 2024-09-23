@@ -13,8 +13,6 @@ using Microsoft.MixedReality.Toolkit.Experimental.UI;
 using System;
 using static UnityEngine.GraphicsBuffer;
 using Unity.XR.CoreUtils;
-using static System.Net.Mime.MediaTypeNames;
-using static Unity.VisualScripting.Metadata;
 using System.Linq;
 using System.Xml;
 public class MenuInteraction : MonoBehaviour
@@ -54,7 +52,7 @@ public class MenuInteraction : MonoBehaviour
     public bool activateWindow = false;
 
     public GameObject previousClickedBtn;
-    public List<(string, GameObject, TMP_Dropdown.OptionData)> selectionlist = new List<(string, GameObject, TMP_Dropdown.OptionData)>();
+    public List<(string, GameObject, TMP_Dropdown.OptionData, string)> selectionlist = new List<(string, GameObject, TMP_Dropdown.OptionData, string)>();
 
     // Start is called before the first frame update
     void Start()
@@ -163,7 +161,7 @@ public class MenuInteraction : MonoBehaviour
             img.color = lightRed;
 
 
-            selectionlist.Add((id,btn,null));
+            selectionlist.Add((id,btn,null, name));
 
 
             btn.GetComponent<UnityEngine.UI.Button>().onClick.AddListener(() => {
@@ -173,7 +171,7 @@ public class MenuInteraction : MonoBehaviour
                 if (img.color == UnityEngine.Color.green)
                 {
                     img.color = lightRed;
-                    SelectSBOM(selectionlist[getIndexByButton(btn)].Item1);
+                    SelectSBOM(selectionlist[getIndexByButton(btn)].Item1, selectionlist[getIndexByButton(btn)].Item4);
                 } 
                 else
                 {
@@ -222,7 +220,7 @@ public class MenuInteraction : MonoBehaviour
             dropdownVersion1.options.Add(newOption);
             dropdownVersion2.options.Add(newOption);
 
-            selectionlist[getIndexByButton(btn)] = (selectionlist[getIndexByButton(btn)].Item1, btn, newOption);
+            selectionlist[getIndexByButton(btn)] = (selectionlist[getIndexByButton(btn)].Item1, btn, newOption, selectionlist[getIndexByButton(btn)].Item4);
         }
 
 
@@ -278,17 +276,17 @@ public class MenuInteraction : MonoBehaviour
         } 
         else
         {
-            SelectSBOM(selectionlist[getIndexByButton(previousClickedBtn)].Item1);
+            SelectSBOM(selectionlist[getIndexByButton(previousClickedBtn)].Item1, selectionlist[getIndexByButton(previousClickedBtn)].Item4);
         }
 
     }
 
-    public void SelectSBOM(string name)
+    public void SelectSBOM(string id, string name)
     {
         //if graph exists already then delete it
         foreach (GraphReader graph in sbomList)
         {
-            if (graph.dbid == name)
+            if (graph.dbid == id)
             {
                 sbomList.Remove(graph);
                 graph.Initialization();
@@ -298,15 +296,16 @@ public class MenuInteraction : MonoBehaviour
                 return;
             }
         }
-        StartCoroutine(dbHandler.GetDatabaseDataById(name, SBOMCreation));
+        StartCoroutine(dbHandler.GetDatabaseDataById(id, name, SBOMCreation));
     }
 
-    public void SBOMCreation(string name, string bsonElements)
+    public void SBOMCreation(string id, string name, string bsonElements)
     {
         //else create new graph
         GraphReader newGraph = new GraphReader();
         newGraph.BallPrefab = BallPrefab;
-        newGraph.dbid = name;
+        newGraph.dbid = id;
+        newGraph.sbomName = name;
         newGraph.CreateGraph(bsonElements, dropdown.options[dropdown.value].text, showDuplicateNodesToggle.isOn);
         sbomList.Add(newGraph);
         InitSliders();
@@ -327,6 +326,7 @@ public class MenuInteraction : MonoBehaviour
         Graph2.dbid = id2;
 
         newGraph.dbid = id1;
+        newGraph.sbomName = "";
 
         Graph1.Initialization();
         Graph1.ReadFileAndCreateObjects(sboms[0]);
@@ -347,6 +347,7 @@ public class MenuInteraction : MonoBehaviour
         //Start Recursion With Root and make new combined Graph
         RecursiveCompare(Graph1.dataObjects[0], Graph2.dataObjects[0], newGraph.dataObjects[0], Graph1, Graph2, newGraph);
 
+        newGraph.CountCategoryNumbers();
         newGraph.PositionDataBalls(dropdown.options[dropdown.value].text);
         newGraph.ColorDataBalls();
         newGraph.CreateCategories();
@@ -748,7 +749,17 @@ public class MenuInteraction : MonoBehaviour
                     return;
                 }
             }
+
+            foreach (GameObject cobj in graph.categoryBalls)
+            {
+                if(ball == cobj)
+                {
+                    //TODO
+                }
+            }
         }
+
+
     }
 
     public void MakeOtherNodesTransparent(DataObject dobj)

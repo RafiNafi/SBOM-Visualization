@@ -26,7 +26,7 @@ public class BackendDataHandler : MonoBehaviour
         
     }
     
-    public IEnumerator GetDatabaseDataById(string id, System.Action<string, string> callback)
+    public IEnumerator GetDatabaseDataById(string id, string name, System.Action<string, string, string> callback)
     {
 
         using (UnityWebRequest webRequest = UnityWebRequest.Get(BackendConnectionString + "/api/DB/" + id + "/"))
@@ -36,12 +36,12 @@ public class BackendDataHandler : MonoBehaviour
             if (webRequest.result == UnityWebRequest.Result.ConnectionError)
             {
                 Debug.Log(": Error: " + webRequest.error);
-                callback(null, null);
+                callback(null, null, null);
             }
             else
             {
                 Debug.Log(": Received: " + webRequest.downloadHandler.text);
-                callback(id, webRequest.downloadHandler.text);
+                callback(id,name, webRequest.downloadHandler.text);
             }
         }
 

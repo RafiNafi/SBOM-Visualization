@@ -22,12 +22,15 @@ public class GraphReader
     public GameObject BoundaryBox;
 
     public string dbid;
+    public string sbomName;
 
     public List<DataObject> dataObjects = new List<DataObject>();
     public Dictionary<int, int> level_occurrences = new Dictionary<int, int>();
     public LineDrawer ld;
     public static Dictionary<string, UnityEngine.Color> colors = new Dictionary<string, UnityEngine.Color>();
     public List<GameObject> categoryBalls = new List<GameObject>();
+
+    public Dictionary<string, int> categoryNumbers = new Dictionary<string, int>();
 
     public Vector3 offset = new Vector3(0, 0, 0);
     public Vector3 offsetCategories = new Vector3(0, 0, 0);
@@ -43,6 +46,7 @@ public class GraphReader
     {
         Initialization();
         ReadFileAndCreateObjects(sbomElement);
+        CountCategoryNumbers();
 
         if(!showDuplicateNodes)
         {
@@ -85,6 +89,7 @@ public class GraphReader
         level_occurrences.Clear();
         //colors.Clear();
         categoryBalls.Clear();
+        categoryNumbers.Clear();
         lineCounter = 0;
     }
 
@@ -114,7 +119,14 @@ public class GraphReader
 
         if(value != "")
         {
-            text.text = key + ":" + value;
+            if(value.Length > 200)
+            {
+                text.text = key + ":" + value.Substring(0,199) + "<b>...</b>";
+            }
+            else
+            {
+                text.text = key + ":" + value;
+            }
         }
         else
         {
@@ -239,6 +251,21 @@ public class GraphReader
             }
         }
 
+    }
+
+    public void CountCategoryNumbers()
+    {
+        foreach (DataObject obj in dataObjects) 
+        { 
+            if(categoryNumbers.ContainsKey(obj.key) || categoryNumbers.ContainsKey(obj.key.Substring(0, obj.key.Length - obj.suffix.Length)))
+            {
+                categoryNumbers[obj.key.Substring(0, obj.key.Length - obj.suffix.Length)]++;
+            }
+            else
+            {
+                categoryNumbers.Add(obj.key.Substring(0, obj.key.Length - obj.suffix.Length), 1);
+            }
+        }
     }
 
     public void FuseSameNodes()
@@ -647,8 +674,17 @@ public class GraphReader
         float sqrt_val = Mathf.Sqrt(colorsLocal.Count);
         int rounded_val = Mathf.CeilToInt(sqrt_val);
 
-        //Debug.Log(rounded_val);
+        float sideX = Mathf.Abs(BoundaryBox.GetComponent<Renderer>().bounds.max.x - BoundaryBox.GetComponent<Renderer>().bounds.min.x);
+        float sideZ = Mathf.Abs(BoundaryBox.GetComponent<Renderer>().bounds.max.z - BoundaryBox.GetComponent<Renderer>().bounds.min.z);
+
         //Debug.Log(colors.Count);
+
+        int mostAppearance = 0;
+
+        foreach((string key, int val) in categoryNumbers)
+        {
+            if (val > mostAppearance) mostAppearance = val;
+        }
 
         for (int x = 0; x < rounded_val; x++)
         {
@@ -658,15 +694,17 @@ public class GraphReader
 
                 if(index < colorsLocal.Count)
                 {
+                    //GameObject categoryPoint = MonoBehaviour.Instantiate(BallPrefab, new Vector3(1 - (x * 0.75f) - x * (sideX/rounded_val), 0, 2 + z + z * (sideZ/rounded_val) + ((x%2) * 0.25f)), Quaternion.identity);
 
-                    GameObject categoryPoint = MonoBehaviour.Instantiate(BallPrefab, new Vector3(1 - (x * 0.75f), 0, 2 + (z * 1f) + (x%2) * 0.25f), Quaternion.identity);
+                    GameObject categoryPoint = MonoBehaviour.Instantiate(BallPrefab, new Vector3(1 - x, 0, 2 + z + ((x%2) * 0.25f)), Quaternion.identity);
                     TextMeshPro text = categoryPoint.GetComponentInChildren<TextMeshPro>();
-
 
                     text.text = colorsLocal.ElementAt(index).Key;
                     categoryPoint.GetComponentInChildren<Renderer>().material.color = colorsLocal.ElementAt(index).Value;
 
-                    categoryPoint.transform.localScale = new Vector3(0.5f, 0.5f, 0.5f);
+                    float relevance = (categoryNumbers[text.text] / (float)mostAppearance) / 2.5f;
+
+                    categoryPoint.transform.localScale = new Vector3(0.5f + relevance, 0.5f + relevance, 0.5f + relevance);
 
                     categoryBalls.Add(categoryPoint);
                 }
@@ -718,10 +756,18 @@ public class GraphReader
         contentFitter.horizontalFit = ContentSizeFitter.FitMode.PreferredSize;
         contentFitter.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
 
-        sbomLabelText.text = dbid;
+        if(sbomName != "")
+        {
+            sbomLabelText.text = sbomName;
+        } 
+        else
+        {
+            sbomLabelText.text = dbid;
+        }
+
         sbomLabelText.fontSize = 8;
         sbomLabelText.alignment = TextAlignmentOptions.Center;
-        sbomLabelText.color = new UnityEngine.Color(0.1f, 0.1f, 0.1f, 0.9f);
+        sbomLabelText.color = new UnityEngine.Color(0.1f, 0.1f, 0.1f, 0.7f);
 
         AdjustTextFontSize();
     }
