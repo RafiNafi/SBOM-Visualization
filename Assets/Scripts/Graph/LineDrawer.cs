@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -22,24 +23,72 @@ public class LineDrawer
         lineRenderer = newLine.AddComponent<LineRenderer>();
         lineRenderer.material = new Material(Shader.Find("Sprites/Default"));
 
-        if (isCVE) 
-        {
-            lineRenderer.startColor = new Color(1, 0, 0, 0.9f);
-            lineRenderer.endColor = new Color(1, 0, 0, 0.9f);
-        } 
-        else
-        {
-            lineRenderer.startColor = new Color(0, 0, 1, 0.9f);
-            lineRenderer.endColor = new Color(0, 0, 1, 0.9f);
-        }
-
         lineRenderer.startWidth = lineW;
         lineRenderer.endWidth = lineW;
 
-        lineRenderer.positionCount = 2;
+        Vector3 midPoint = Vector3.Lerp(pointlist[0], pointlist[1], 0.8f);
+        pointlist.Insert(1, midPoint);
+
+        lineRenderer.positionCount = 3;
         lineRenderer.SetPositions(pointlist.ToArray());
-        
+
+        Gradient g = new Gradient();
+
+        if (isCVE)
+        {
+
+            g = GetRedGradientWithTransparency(0.9f);
+        }
+        else
+        {
+            g = GetBlueGradientWithTransparency(0.9f);
+        }
+
+        lineRenderer.colorGradient = g;
+
         return newLine;
+    }
+
+    public Gradient GetBlueGradientWithTransparency(float transparency)
+    {
+        Gradient g = new Gradient();
+
+        var colors = new GradientColorKey[]{
+            new GradientColorKey(new Color(0, 0, 1, transparency), 0.0f),
+            new GradientColorKey(new Color(0, 0, 1, transparency), 0.8f),
+            new GradientColorKey(new Color(65f / 255f, 2220f / 255f, 210f / 255f, transparency),1f)
+            };
+
+        GradientAlphaKey[] alphas = new GradientAlphaKey[] {
+
+                new GradientAlphaKey(transparency,0f),
+                new GradientAlphaKey(transparency,1f)
+        };
+
+        g.SetKeys(colors, alphas);
+
+        return g;
+    }
+
+    public Gradient GetRedGradientWithTransparency(float transparency)
+    {
+        Gradient g = new Gradient();
+
+        var colors = new GradientColorKey[]{
+            new GradientColorKey(new Color(1, 0, 0, transparency), 0.0f),
+            new GradientColorKey(new Color(1, 0, 0, transparency), 0.8f),
+            new GradientColorKey(new Color(1f, 185f/255f, 185f/255f, transparency),1f)
+            };
+
+        GradientAlphaKey[] alphas = new GradientAlphaKey[] {
+
+                new GradientAlphaKey(transparency,0f),
+                new GradientAlphaKey(transparency,1f)
+        };
+
+        g.SetKeys(colors, alphas);
+
+        return g;
     }
 
     public GameObject DrawCube(Vector3 graphMin, Vector3 graphMax)

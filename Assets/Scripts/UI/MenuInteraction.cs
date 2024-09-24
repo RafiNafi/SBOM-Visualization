@@ -15,10 +15,13 @@ using static UnityEngine.GraphicsBuffer;
 using Unity.XR.CoreUtils;
 using System.Linq;
 using System.Xml;
+using UnityEngine.Windows;
 public class MenuInteraction : MonoBehaviour
 {
 
     public BackendDataHandler dbHandler;
+
+    public LineDrawer ld;
 
     public GameObject scrollViewContent;
     public GameObject scrollViewContentPositions;
@@ -511,10 +514,11 @@ public class MenuInteraction : MonoBehaviour
 
         obj.DataBall.GetComponentInChildren<Renderer>().material.color = c;
 
+        ld = new LineDrawer(0.04f);
+
         foreach (var line in obj.relationship_line_parent)
         {
-            line.GetComponent<LineRenderer>().startColor = new UnityEngine.Color(0, 0, 1, valueLines);
-            line.GetComponent<LineRenderer>().endColor = new UnityEngine.Color(0, 0, 1, valueLines);
+            line.GetComponent<LineRenderer>().colorGradient = ld.GetBlueGradientWithTransparency(valueLines);
         }
 
         TextMeshPro t = obj.DataBall.GetNamedChild("Ball").GetNamedChild("Text").GetComponent<TextMeshPro>();
@@ -812,7 +816,7 @@ public class MenuInteraction : MonoBehaviour
                     {
                         if (child.parent.Contains(other.parent[0]))
                         {
-                            displayText += GetLineText(child, other);
+                            displayText += GetLineText(child, other, "");
                         }
                     }
                     pos++;
@@ -832,9 +836,10 @@ public class MenuInteraction : MonoBehaviour
                 {
                     if (other.parent.Contains(parent))
                     {
-                        displayText += GetLineText(other, dobj);
+                        displayText += GetLineText(other, dobj, "");
                     }
                 }
+                displayText += "\t";
                 pos++;
                 TMP_Dropdown.OptionData newOption = new TMP_Dropdown.OptionData("Position " + pos);
                 dropdownPositions.options.Add(newOption);
@@ -847,14 +852,14 @@ public class MenuInteraction : MonoBehaviour
     }
 
 
-    public string GetLineText(DataObject other, DataObject dobj)
+    public string GetLineText(DataObject other, DataObject dobj, string tabs)
     {
-        string displayText = "";
+        string displayText = "" + tabs;
         string lineNumber = "";
 
         if(showDuplicateNodesToggle.isOn)
         {
-            lineNumber = "<color=#010101>" + other.lineNumber.ToString() + "\t </color>";
+            lineNumber = "<color=#010101>" + other.lineNumber.ToString() + "</color> \t";
         }
 
         if (other == dobj)
@@ -873,12 +878,83 @@ public class MenuInteraction : MonoBehaviour
         }
         else 
         {
-            displayText += "<link=\"other.key\"><b>";
+            displayText += "<link=\""+other.GetHashCode()+"\"><b>";
             displayText += "{...}" + "</b></link>" + "\n";
 
         }
 
         return displayText;
+    }
+
+    int countTabs = 0;
+
+    public void ExpandNodeInMenu(string linkHashID)
+    {
+        foreach (GraphReader graph in sbomList)
+        {
+            foreach (DataObject other in graph.dataObjects)
+            {
+                if (other.GetHashCode().ToString() == linkHashID)
+                {
+                    TextMeshProUGUI text = scrollViewContentPositions.GetComponent<TextMeshProUGUI>();
+
+                    string displayText = textsPosition[dropdownPositions.options[dropdownPositions.value].text];
+                    string addedDisplayText = "";
+                    int maxSequence = GetMaxSequence(displayText);
+                    string tabs = "";
+                    Debug.Log(maxSequence);
+
+                    for (int i = 0; i < maxSequence + countTabs; i++)
+                    {
+                        tabs += "\t";
+                    }
+                    if (countTabs == 0) countTabs++;
+
+                    Debug.Log(other.key);
+
+                    foreach (DataObject child in graph.dataObjects)
+                    {
+                        if (child.parent.Contains(other))
+                        {
+                            addedDisplayText += GetLineText(child, null, tabs);
+                        }
+                    }
+
+                    string search = "<link=\"" + other.GetHashCode() + "\"><b>" + "{...}" + "</b></link>" + "\n";
+                    int index = displayText.IndexOf(search);
+                    Debug.Log(index);
+
+                    displayText = displayText.Substring(0, search.Length + index) + addedDisplayText + displayText.Substring(search.Length + index);
+
+                    textsPosition[dropdownPositions.options[dropdownPositions.value].text] = displayText;
+                    
+                    text.text = displayText;
+
+                    return;
+                }
+            }
+        }
+    }
+
+    public int GetMaxSequence(string input)
+    {
+        int maxCount = 0;
+        int currentCount = 0;
+
+        foreach (char c in input)
+        {
+            if (c == '\t')
+            {
+                currentCount++;  
+                maxCount = Math.Max(maxCount, currentCount);
+            }
+            else
+            {
+                currentCount = 0; 
+            }
+        }
+
+        return maxCount;
     }
 
     public void OnDropdownValueChanged(int index)

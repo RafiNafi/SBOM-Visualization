@@ -51,20 +51,26 @@ public class VRInteractionDetection : MonoBehaviour
         {
             TextMeshProUGUI text = scrollViewContent.GetComponent<TextMeshProUGUI>();
 
-            Debug.Log(hitNew.gameObject);
-
             if (hitNew.gameObject != null && hitNew.gameObject == text.gameObject)
             {
-                int linkIndex = TMP_TextUtilities.FindIntersectingLink(text, hitNew.worldPosition, cam);
+                Vector3 worldPoint = hitNew.worldPosition;
+                Vector2 screenPoint = cam.WorldToScreenPoint(worldPoint);
 
-                Debug.Log(linkIndex);
+                int linkIndex = TMP_TextUtilities.FindIntersectingLink(text, screenPoint, cam);
 
                 if (linkIndex != -1) 
                 {
                     TMP_LinkInfo linkInfo = text.textInfo.linkInfo[linkIndex];
 
-                    Debug.Log("Hovering over: " + linkInfo.GetLinkID());
-
+                    if (IsClickAllowed())
+                    {
+                        if (IsTriggerPressed(controllerRight))
+                        {
+                            lastClickTime = Time.time;
+                            Debug.Log("Selected link: " + linkInfo.GetLinkID());
+                            menu.ExpandNodeInMenu(linkInfo.GetLinkID());
+                        }
+                    }
                 }
             }
         }
