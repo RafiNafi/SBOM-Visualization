@@ -16521,6 +16521,7 @@ MonoBehaviour:
   jsonMenu: {fileID: 1339263835}
   activateWindow: 0
   previousClickedBtn: {fileID: 0}
+  previousSelectedType: 
 --- !u!1 &1014711966
 GameObject:
   m_ObjectHideFlags: 0
@@ -27850,7 +27851,7 @@ Light:
   m_BounceIntensity: 1
   m_ColorTemperature: 6570
   m_UseColorTemperature: 0
-  m_BoundingSphereOverride: {x: 1.5581355e+28, y: 1.7443726e+28, z: 5.730171e-39, w: 1.601278e+34}
+  m_BoundingSphereOverride: {x: 4.5904e-41, y: -0.00000059555987, z: 4.5904e-41, w: 9.403955e-38}
   m_UseBoundingSphereOverride: 0
   m_UseViewFrustumForShadowCasterCull: 1
   m_ShadowRadius: 0

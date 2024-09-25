@@ -23,6 +23,7 @@ public class VRInteractionDetection : MonoBehaviour
 
     void Update()
     {
+        //Only Balls clickable when Json menu not active to prevent to select by mistake
         if(!jsonMenu.activeSelf)
         {
             if (IsTriggerPressed(controllerRight))

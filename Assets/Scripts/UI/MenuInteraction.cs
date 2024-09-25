@@ -16,6 +16,8 @@ using Unity.XR.CoreUtils;
 using System.Linq;
 using System.Xml;
 using UnityEngine.Windows;
+using static Unity.VisualScripting.Metadata;
+using UnityEngine.XR.OpenXR.Input;
 public class MenuInteraction : MonoBehaviour
 {
 
@@ -56,6 +58,8 @@ public class MenuInteraction : MonoBehaviour
 
     public GameObject previousClickedBtn;
     public List<(string, GameObject, TMP_Dropdown.OptionData, string)> selectionlist = new List<(string, GameObject, TMP_Dropdown.OptionData, string)>();
+
+    public string previousSelectedType = "";
 
     // Start is called before the first frame update
     void Start()
@@ -488,12 +492,12 @@ public class MenuInteraction : MonoBehaviour
                 {
                     if (!obj.key.Contains(text) && !obj.value.Contains(text))
                     {
-                        ChangeNodeTransparency(obj, 0.2f, 0.2f, 0.3f);
+                        ChangeNodeAndLinesTransparency(obj, 0.2f, 0.1f, 0.3f);
 
                     }
                     else
                     {
-                        ChangeNodeTransparency(obj, 1f, 0.9f, 1f);
+                        ChangeNodeAndLinesTransparency(obj, 1f, 0.9f, 1f);
                     }
                 }
             }
@@ -501,13 +505,13 @@ public class MenuInteraction : MonoBehaviour
             {
                 foreach (DataObject obj in graph.dataObjects)
                 {
-                    ChangeNodeTransparency(obj, 1f, 0.9f,1f);
+                    ChangeNodeAndLinesTransparency(obj, 1f, 0.9f,1f);
                 }
             }
         }
     }
 
-    public void ChangeNodeTransparency(DataObject obj, float valueBall, float valueLines, float valueText) 
+    public void ChangeNodeAndLinesTransparency(DataObject obj, float valueBall, float valueLines, float valueText) 
     {
         UnityEngine.Color c = obj.DataBall.GetComponentInChildren<Renderer>().material.color;
         c.a = valueBall;
@@ -520,6 +524,21 @@ public class MenuInteraction : MonoBehaviour
         {
             line.GetComponent<LineRenderer>().colorGradient = ld.GetBlueGradientWithTransparency(valueLines);
         }
+
+        TextMeshPro t = obj.DataBall.GetNamedChild("Ball").GetNamedChild("Text").GetComponent<TextMeshPro>();
+
+        UnityEngine.Color currentColor = t.color;
+        currentColor.a = valueText;
+        t.color = currentColor;
+    }
+
+
+    public void ChangeOnlyNodeTransparency(DataObject obj, float valueBall, float valueText)
+    {
+        UnityEngine.Color c = obj.DataBall.GetComponentInChildren<Renderer>().material.color;
+        c.a = valueBall;
+
+        obj.DataBall.GetComponentInChildren<Renderer>().material.color = c;
 
         TextMeshPro t = obj.DataBall.GetNamedChild("Ball").GetNamedChild("Text").GetComponent<TextMeshPro>();
 
@@ -739,6 +758,7 @@ public class MenuInteraction : MonoBehaviour
 
     public void ShowNodePositionInMenu(GameObject ball)
     {
+        //Graph Node Clicked
         foreach (GraphReader graph in sbomList) { 
             foreach(DataObject dobj in graph.dataObjects)
             {
@@ -746,7 +766,8 @@ public class MenuInteraction : MonoBehaviour
                 {
                     Debug.Log(dobj.key + " : " + dobj.value);
 
-                    MakeOtherNodesTransparent(dobj);
+                    MakeAllNodesVisible();
+                    MakeOtherNodesTransparent(dobj, graph);
                     ShowPositionInJson(dobj, graph);
                     activateWindow = true;
                     jsonMenu.SetActive(activateWindow);
@@ -754,11 +775,30 @@ public class MenuInteraction : MonoBehaviour
                 }
             }
 
+            //Category Node Clicked
             foreach (GameObject cobj in graph.categoryBalls)
             {
-                if(ball == cobj)
+                if(ball == cobj.GetNamedChild("Ball"))
                 {
-                    //TODO
+                    List<GameObject> children = new List<GameObject>();
+                    ball.GetChildGameObjects(children);
+
+                    Debug.Log(children[0]);
+
+                    TextMeshPro textui = children[0].GetComponent<TextMeshPro>();
+
+                    if(previousSelectedType == textui.text)
+                    {
+                        MakeAllNodesVisible();
+                    }
+                    else
+                    {
+                        MakeAllNodesVisible();
+                        MakeOtherNodesTransparentWithString(textui.text, graph);
+                        previousSelectedType = textui.text;
+                    }
+
+                    return;
                 }
             }
         }
@@ -766,30 +806,66 @@ public class MenuInteraction : MonoBehaviour
 
     }
 
-    public void MakeOtherNodesTransparent(DataObject dobj)
+    public void MakeOtherNodesTransparent(DataObject dobj, GraphReader g)
     {
-        foreach (GraphReader graph in sbomList)
+
+        foreach (DataObject other in g.dataObjects)
         {
-            foreach (DataObject other in graph.dataObjects)
+            if (other.key != dobj.key || other.value != dobj.value)
             {
-                if(other.key != dobj.key && other.value != dobj.value)
+                ChangeNodeAndLinesTransparency(other, 0.2f, 0.1f, 0.3f);
+
+                if (other.parent.Contains(dobj) || dobj.parent.Contains(other))
                 {
-                    ChangeNodeTransparency(other, 0.2f, 0.2f, 0.3f);
+                    ld = new LineDrawer(0.04f);
+
+                    foreach (var line in other.relationship_line_parent)
+                    {
+                        LineRenderer lr = line.GetComponent<LineRenderer>();
+
+                        Vector3 startPosition = lr.GetPosition(0);
+                        Vector3 endPosition = lr.GetPosition(lr.positionCount - 1);
+
+                        if((Vector3.Distance(startPosition, dobj.DataBall.transform.position) <= 0.0001f) || (Vector3.Distance(endPosition, dobj.DataBall.transform.position) <= 0.0001f))
+                        {
+                            lr.colorGradient = ld.GetBlueGradientWithTransparency(0.9f);
+                        }
+
+                        ChangeOnlyNodeTransparency(other, 1f, 1f);
+                    }
+
                 }
+            }
+        }
+    }
+
+    public void MakeOtherNodesTransparentWithString(string key, GraphReader g)
+    {
+        foreach (DataObject other in g.dataObjects)
+        {
+            if (key != other.key && key != (other.key.Substring(0, other.key.Length - other.suffix.Length)))
+            {
+                ChangeNodeAndLinesTransparency(other, 0.2f, 0.1f, 0.3f);
             }
         }
     }
 
     public void CloseJSONPosWindow()
     {
+        MakeAllNodesVisible();
+
+        activateWindow = false;
+    }
+
+    public void MakeAllNodesVisible()
+    {
         foreach (GraphReader graph in sbomList)
         {
             foreach (DataObject other in graph.dataObjects)
             {
-                ChangeNodeTransparency(other, 1f, 0.9f, 1f);
+                ChangeNodeAndLinesTransparency(other, 1f, 0.9f, 1f);
             }
         }
-        activateWindow = false;
     }
 
     public void CheckPosWindowVisibility()

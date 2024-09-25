@@ -796,7 +796,7 @@ public class GraphReader
         {
             if (value - sbomLabelText.preferredWidth > 2)
             {
-                if (sbomLabelText.fontSize >= 120) break;
+                if (sbomLabelText.fontSize >= 100) break;
 
                 sbomLabelText.fontSize += 0.2f;
             }
@@ -809,40 +809,6 @@ public class GraphReader
         sbomLabel.transform.localPosition += new Vector3(0, (sbomLabelText.fontSize * 0.05f) + 1.5f , 0);
 
         //sbomLabel.transform.localPosition += new Vector3(0, sbomLabelText.preferredHeight, 0);
-
-        /*
-        MeshFilter meshFilter = sbomLabelText.GetComponent<MeshFilter>();
-
-        if (meshFilter != null && meshFilter.mesh != null)
-        {
-            Vector3[] vertices = meshFilter.mesh.vertices;
-            float minY = Mathf.Infinity;
-
-            foreach (Vector3 vertex in vertices)
-            {
-                Vector3 worldVertex = sbomLabel.transform.TransformPoint(vertex);
-
-                if (worldVertex.y < minY)
-                {
-                    minY = worldVertex.y;
-                }
-            }
-
-            Vector3 bottomCoordinate = new Vector3(sbomLabel.transform.position.x, minY, sbomLabel.transform.position.z);
-
-            Debug.Log("Bottom Coord: " + bottomCoordinate);
-
-            if(!float.IsInfinity(bottomCoordinate.y))
-            {
-                float difference = Mathf.Abs(bottomCoordinate.y - BoundaryBox.GetComponent<Renderer>().bounds.min.y);
-
-                if (difference > 0)
-                {
-                    sbomLabel.transform.localPosition += new Vector3(0, difference, 0);
-                }
-            }
-        }
-        */
 
         Canvas.ForceUpdateCanvases();
     }
