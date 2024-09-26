@@ -693,7 +693,7 @@ public class MenuInteraction : MonoBehaviour
 
             }
 
-            Vector3 adjustCategoriesEdge = new Vector3(list[i].BoundaryBox.GetComponent<Renderer>().bounds.max.x - 2, list[i].BoundaryBox.GetComponent<Renderer>().bounds.max.y + 1, list[i].BoundaryBox.GetComponent<Renderer>().bounds.min.z);
+            Vector3 adjustCategoriesEdge = new Vector3(list[i].BoundaryBox.GetComponent<Renderer>().bounds.max.x, list[i].BoundaryBox.GetComponent<Renderer>().bounds.max.y + 1, list[i].BoundaryBox.GetComponent<Renderer>().bounds.min.z);
 
             PositionCategoryBalls(list[i], adjustCategoriesEdge - list[i].offsetCategories);
             list[i].offsetCategories = adjustCategoriesEdge;

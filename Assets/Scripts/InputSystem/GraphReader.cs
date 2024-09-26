@@ -20,6 +20,7 @@ public class GraphReader
 {
     public GameObject BallPrefab;
     public GameObject BoundaryBox;
+    public GameObject BoundaryBoxCategories;
 
     public string dbid;
     public string sbomName;
@@ -80,7 +81,11 @@ public class GraphReader
         {
             MonoBehaviour.Destroy(BoundaryBox);
         }
-        if(sbomLabel != null)
+        if (BoundaryBoxCategories != null)
+        {
+            MonoBehaviour.Destroy(BoundaryBoxCategories);
+        }
+        if (sbomLabel != null)
         {
             MonoBehaviour.Destroy (sbomLabel);
         }
@@ -176,7 +181,7 @@ public class GraphReader
                     {
                         counter++;
 
-                        string sub_node = kv.Key.ToString().Substring(0, kv.Key.Length - 1);
+                        string sub_node = kv.Key.ToString().Substring(0, kv.Key.Length) + "-";
                         Debug.Log(kv.Key + "-[REL]->" + sub_node + counter);
 
                         DataObject new_sub_parent = CreateDataObjectWithBall(new_parent.level + 1, sub_node + counter, "", new_parent);
@@ -572,9 +577,22 @@ public class GraphReader
             }
         }
 
-
         //Move boundary box pos
-        LineRenderer cubeRenderer = BoundaryBox.GetComponent<LineRenderer>();
+        MoveBoundaryBox(BoundaryBox, position);
+
+        //Move category boundary Box pos
+        MoveBoundaryBox(BoundaryBoxCategories, position);
+
+        //Set Label Pos
+        sbomLabel.transform.localPosition = new Vector3(BoundaryBox.GetComponent<Renderer>().bounds.min.x + 0.5f,
+            BoundaryBox.GetComponent<Renderer>().bounds.min.y, (BoundaryBox.GetComponent<Renderer>().bounds.max.z + BoundaryBox.GetComponent<Renderer>().bounds.min.z) / 2);
+
+        AdjustTextFontSize();
+    }
+
+    public void MoveBoundaryBox(GameObject box, Vector3 position)
+    {
+        LineRenderer cubeRenderer = box.GetComponent<LineRenderer>();
 
         int positionCount = cubeRenderer.positionCount;
         Vector3[] positions = new Vector3[positionCount];
@@ -586,12 +604,6 @@ public class GraphReader
         }
 
         cubeRenderer.SetPositions(positions);
-
-        //Set Label Pos
-        sbomLabel.transform.localPosition = new Vector3(BoundaryBox.GetComponent<Renderer>().bounds.min.x + 0.5f,
-            BoundaryBox.GetComponent<Renderer>().bounds.min.y, (BoundaryBox.GetComponent<Renderer>().bounds.max.z + BoundaryBox.GetComponent<Renderer>().bounds.min.z) / 2);
-
-        AdjustTextFontSize();
     }
 
 
@@ -623,6 +635,19 @@ public class GraphReader
 
     }
 
+    public bool HasChildrens(DataObject parent)
+    {
+        foreach (DataObject point in dataObjects)
+        {
+            if(point.parent.Contains(parent))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     public void ColorDataBalls()
     {
 
@@ -636,6 +661,7 @@ public class GraphReader
             } 
             else
             {
+
                 //UnityEngine.Color c = UnityEngine.Random.ColorHSV();
                 UnityEngine.Color c = UnityEngine.Color.HSVToRGB(UnityEngine.Random.Range(0f, 1f), UnityEngine.Random.Range(0.1f, 1f), UnityEngine.Random.Range(0.2f, 1f));
 
@@ -652,6 +678,7 @@ public class GraphReader
                 }
                 ball.DataBall.GetComponentInChildren<Renderer>().material.color = c;
                 colors.Add(ball.key.Substring(0, ball.key.Length - ball.suffix.Length), c);
+
             }
 
         }
@@ -666,13 +693,22 @@ public class GraphReader
             {
                 if (!colorsLocal.ContainsKey(ball.key) && !colorsLocal.ContainsKey(ball.key.Substring(0, ball.key.Length - ball.suffix.Length)))
                 {
+                    
+                    if (ball.key != "ROOT" && ball.value == "" && !HasChildrens(ball))
+                    {
+                        continue;
+                    }
+
                     colorsLocal.Add(ball.key.Substring(0, ball.key.Length - ball.suffix.Length), colors[ball.key.Substring(0, ball.key.Length - ball.suffix.Length)]);
                 }
             } 
         }
 
-        float sqrt_val = Mathf.Sqrt(colorsLocal.Count);
-        int rounded_val = Mathf.CeilToInt(sqrt_val);
+        //float sqrt_val = Mathf.Sqrt(colorsLocal.Count);
+        //int rounded_val = Mathf.CeilToInt(sqrt_val);
+
+        int columns = (int)Mathf.Sqrt(colorsLocal.Count);
+        int rows = Mathf.CeilToInt(colorsLocal.Count / (float)columns);
 
         float sideX = Mathf.Abs(BoundaryBox.GetComponent<Renderer>().bounds.max.x - BoundaryBox.GetComponent<Renderer>().bounds.min.x);
         float sideZ = Mathf.Abs(BoundaryBox.GetComponent<Renderer>().bounds.max.z - BoundaryBox.GetComponent<Renderer>().bounds.min.z);
@@ -686,30 +722,70 @@ public class GraphReader
             if (val > mostAppearance) mostAppearance = val;
         }
 
-        for (int x = 0; x < rounded_val; x++)
+        int indexCount = 0;
+        int loopCount = 0;
+
+        while(indexCount < colorsLocal.Count)
         {
-            for (int z = 0; z < rounded_val; z++)
+            for (int x = 0; x < columns; x++)
             {
-                int index = z * rounded_val + x;
-
-                if(index < colorsLocal.Count)
+                for (int z = 0; z < rows; z++)
                 {
-                    //GameObject categoryPoint = MonoBehaviour.Instantiate(BallPrefab, new Vector3(1 - (x * 0.75f) - x * (sideX/rounded_val), 0, 2 + z + z * (sideZ/rounded_val) + ((x%2) * 0.25f)), Quaternion.identity);
+                    if(indexCount < colorsLocal.Count)
+                    {
+                        float addX = (sideX / columns);
+                        float addZ = (sideZ / rows);
 
-                    GameObject categoryPoint = MonoBehaviour.Instantiate(BallPrefab, new Vector3(1 - x, 0, 2 + z + ((x%2) * 0.25f)), Quaternion.identity);
-                    TextMeshPro text = categoryPoint.GetComponentInChildren<TextMeshPro>();
+                        if (addX < 1)
+                        {
+                            addX = 1;
+                        }
+                        if (addZ < 1)
+                        {
+                            addZ = 1;
+                        }
 
-                    text.text = colorsLocal.ElementAt(index).Key;
-                    categoryPoint.GetComponentInChildren<Renderer>().material.color = colorsLocal.ElementAt(index).Value;
+                        Vector3 v = new Vector3(0 - x * addX - 1f, 0 + loopCount, 0 + z * addZ + 1f);
 
-                    float relevance = (categoryNumbers[text.text] / (float)mostAppearance) / 2.5f;
+                        if ((-1 * sideX) > v.x || sideZ < v.z)
+                        {
+                            continue;
+                        }
 
-                    categoryPoint.transform.localScale = new Vector3(0.5f + relevance, 0.5f + relevance, 0.5f + relevance);
+                        GameObject categoryPoint = MonoBehaviour.Instantiate(BallPrefab, v, Quaternion.identity);
 
-                    categoryBalls.Add(categoryPoint);
+                        //GameObject categoryPoint = MonoBehaviour.Instantiate(BallPrefab, new Vector3(1 - x, 0, 2 + z + ((x%2) * 0.25f)), Quaternion.identity);
+                        TextMeshPro text = categoryPoint.GetComponentInChildren<TextMeshPro>();
+
+                        //Calculate Size of Category Ball
+                        text.text = colorsLocal.ElementAt(indexCount).Key;
+                        categoryPoint.GetComponentInChildren<Renderer>().material.color = colorsLocal.ElementAt(indexCount).Value;
+
+                        float relevance = (categoryNumbers[text.text] / (float)mostAppearance) / 2.5f;
+                        categoryPoint.transform.localScale = new Vector3(0.5f + relevance, 0.5f + relevance, 0.5f + relevance);
+
+                        categoryBalls.Add(categoryPoint);
+
+                        indexCount++;
+                    }
                 }
             }
+            loopCount++;
         }
+
+        MakeCategoryBoundaries(loopCount);
+    }
+
+    public void MakeCategoryBoundaries(int addedHeight)
+    {
+        if (BoundaryBoxCategories != null)
+        {
+            MonoBehaviour.Destroy(BoundaryBoxCategories);
+        }
+
+        BoundaryBoxCategories = ld.DrawCube(
+            new Vector3(BoundaryBox.GetComponent<Renderer>().bounds.min.x, BoundaryBox.GetComponent<Renderer>().bounds.max.y + 0.5f, BoundaryBox.GetComponent<Renderer>().bounds.min.z) + new Vector3(0.5f, 0, 0.5f),
+            new Vector3(BoundaryBox.GetComponent<Renderer>().bounds.max.x, BoundaryBox.GetComponent<Renderer>().bounds.max.y + 1 + addedHeight, BoundaryBox.GetComponent<Renderer>().bounds.max.z) + new Vector3(-0.5f, 0, -0.5f));
     }
 
     public void MakeGraphBoundaries()
