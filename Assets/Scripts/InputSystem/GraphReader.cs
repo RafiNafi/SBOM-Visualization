@@ -12,8 +12,10 @@ using TMPro;
 using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.InputSystem;
+using UnityEngine.Rendering.Universal;
 using UnityEngine.UI;
 using UnityEngine.UIElements;
+using UnityEngine.XR.Interaction.Toolkit;
 
 
 public class GraphReader
@@ -124,14 +126,7 @@ public class GraphReader
 
         if(value != "")
         {
-            if(value.Length > 200)
-            {
-                text.text = key + ":" + value.Substring(0,199) + "<b>...</b>";
-            }
-            else
-            {
-                text.text = key + ":" + value;
-            }
+            text.text = key + ":" + value;
         }
         else
         {
@@ -763,6 +758,7 @@ public class GraphReader
 
                         float relevance = (categoryNumbers[text.text] / (float)mostAppearance) / 2.5f;
                         categoryPoint.transform.localScale = new Vector3(0.5f + relevance, 0.5f + relevance, 0.5f + relevance);
+                        categoryPoint.transform.localRotation = Quaternion.Euler(0, 90, 0);
 
                         categoryBalls.Add(categoryPoint);
 
@@ -774,6 +770,16 @@ public class GraphReader
         }
 
         MakeCategoryBoundaries(loopCount);
+
+        //Make Floor to walk for category inspection
+        /*
+        GameObject plane = GameObject.CreatePrimitive(PrimitiveType.Plane);
+        plane.transform.position = new Vector3(0, 1, 0);
+        plane.transform.localScale = new Vector3(sideX/10f, 1f, sideZ/10f);
+        BoxCollider boxCollider = plane.AddComponent<BoxCollider>();
+        //plane.GetComponent<MeshRenderer>().enabled = false;
+        //boxCollider.size = new Vector3(sideX, 0.1f, sideZ);
+        */
     }
 
     public void MakeCategoryBoundaries(int addedHeight)
@@ -786,6 +792,7 @@ public class GraphReader
         BoundaryBoxCategories = ld.DrawCube(
             new Vector3(BoundaryBox.GetComponent<Renderer>().bounds.min.x, BoundaryBox.GetComponent<Renderer>().bounds.max.y + 0.5f, BoundaryBox.GetComponent<Renderer>().bounds.min.z) + new Vector3(0.5f, 0, 0.5f),
             new Vector3(BoundaryBox.GetComponent<Renderer>().bounds.max.x, BoundaryBox.GetComponent<Renderer>().bounds.max.y + 1 + addedHeight, BoundaryBox.GetComponent<Renderer>().bounds.max.z) + new Vector3(-0.5f, 0, -0.5f));
+
     }
 
     public void MakeGraphBoundaries()

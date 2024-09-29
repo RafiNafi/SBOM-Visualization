@@ -18,6 +18,7 @@ using System.Xml;
 using UnityEngine.Windows;
 using static Unity.VisualScripting.Metadata;
 using UnityEngine.XR.OpenXR.Input;
+using static UnityEditor.Experimental.AssetDatabaseExperimental.AssetDatabaseCounters;
 public class MenuInteraction : MonoBehaviour
 {
 
@@ -31,6 +32,9 @@ public class MenuInteraction : MonoBehaviour
 
     public UnityEngine.UI.Slider sliderLevel;
     public TextMeshProUGUI sliderText;
+
+    public UnityEngine.UI.Slider sliderTextLength;
+    public TextMeshProUGUI TextLength;
 
     public TMP_InputField inputSearch;
 
@@ -53,6 +57,7 @@ public class MenuInteraction : MonoBehaviour
     public GameObject sbomMenu;
     public TextMeshProUGUI sbomNameText;
 
+    public TextMeshProUGUI selectedNode;
     public GameObject jsonMenu;
     public bool activateWindow = false;
 
@@ -66,12 +71,80 @@ public class MenuInteraction : MonoBehaviour
     {
         AddScrollviewContent();
         dropdownPositions.onValueChanged.AddListener(OnDropdownValueChanged);
+        InitOptions();
     }
 
     // Update is called once per frame
     void Update()
     {
+    }
 
+    public void InitOptions()
+    {
+        TextLength.text = "Text Length Cap: " + (sliderTextLength.value * 10).ToString() + " Character";
+
+        sliderTextLength.onValueChanged.AddListener(OnSliderValueChanged);
+
+        //EventTrigger to handle pointer events
+        EventTrigger trigger = sliderTextLength.gameObject.AddComponent<EventTrigger>();
+
+        EventTrigger.Entry pointerDownEntry = new EventTrigger.Entry();
+        pointerDownEntry.eventID = EventTriggerType.PointerDown;
+        pointerDownEntry.callback.AddListener((eventData) => { OnPointerDown(); });
+        trigger.triggers.Add(pointerDownEntry);
+
+        EventTrigger.Entry pointerUpEntry = new EventTrigger.Entry();
+        pointerUpEntry.eventID = EventTriggerType.PointerUp;
+        pointerUpEntry.callback.AddListener((eventData) => { OnPointerUp(); });
+        trigger.triggers.Add(pointerUpEntry);
+    }
+
+    private bool isDragging = false;
+
+    private void OnSliderValueChanged(float count)
+    {
+        TextLength.text = "Text Length Cap: " + (count * 10).ToString() + " Character";
+
+        if (!isDragging)
+        {
+            foreach (GraphReader g in sbomList)
+            {
+                foreach (DataObject obj in g.dataObjects)
+                {
+                    ChangeTextSize(count, obj);
+                }
+            }
+        }
+    }
+
+    public void ChangeTextSize(float size, DataObject obj)
+    {
+        TextMeshPro text = obj.DataBall.GetComponentInChildren<TextMeshPro>();
+
+        if(obj.value != "")
+        {
+            if ((int)size * 10 >= obj.value.Length)
+            {
+                text.text = obj.key + ":" + obj.value;
+            }
+            else
+            {
+                text.text = obj.key + ":" + obj.value.Substring(0, ((int)size * 10)) + "<b>...</b>";
+            }
+        }
+    }
+
+
+    public void OnPointerDown()
+    {
+        isDragging = true;
+    }
+
+
+    public void OnPointerUp()
+    {
+        isDragging = false;
+        OnSliderValueChanged(sliderTextLength.value); 
     }
 
 
@@ -700,7 +773,9 @@ public class MenuInteraction : MonoBehaviour
 
             ChangeBallRotation(list[i]);
         }
-        
+
+        //Change Ball Text Size 
+        OnSliderValueChanged(sliderTextLength.value);
     }
 
     public void ChangeBallRotation(GraphReader g)
@@ -756,6 +831,20 @@ public class MenuInteraction : MonoBehaviour
         return bounds.extents.x;
     }
 
+    public int NumberRelationshipsOfNode(DataObject obj, GraphReader g)
+    {
+        int relations = obj.parent.Count;
+        foreach(DataObject node in g.dataObjects)
+        {
+            if(node.parent.Contains(obj))
+            {
+                relations++;
+            }
+        }
+
+        return relations;
+    }
+
     public void ShowNodePositionInMenu(GameObject ball)
     {
         //Graph Node Clicked
@@ -770,7 +859,8 @@ public class MenuInteraction : MonoBehaviour
                     MakeOtherNodesTransparent(dobj, graph);
                     ShowPositionInJson(dobj, graph);
                     activateWindow = true;
-                    jsonMenu.SetActive(activateWindow);
+                    jsonMenu.SetActive(activateWindow); 
+                    selectedNode.text = "<color=#550000>Type: </color>" + dobj.key + "\n <color=#550000>Value:</color> " + dobj.value + "\n <color=#550000>Relationships:</color> " + NumberRelationshipsOfNode(dobj, graph);
                     return;
                 }
             }
