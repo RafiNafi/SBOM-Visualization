@@ -17,6 +17,7 @@ public class DataObject
     public string suffix = "";
     public int lineNumber = 0;
     public List<DataObject> children = new List<DataObject>();
+    public int nr_relationships = 0;
 
     public DataObject(GameObject ball,int lvl,string key, string value, DataObject p, int lineNumber)
     {

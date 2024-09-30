@@ -19,6 +19,7 @@ using UnityEngine.Windows;
 using static Unity.VisualScripting.Metadata;
 using UnityEngine.XR.OpenXR.Input;
 using static UnityEditor.Experimental.AssetDatabaseExperimental.AssetDatabaseCounters;
+using UnityEngine.XR.Interaction.Toolkit;
 public class MenuInteraction : MonoBehaviour
 {
 
@@ -43,6 +44,7 @@ public class MenuInteraction : MonoBehaviour
 
     public UnityEngine.UI.Toggle showCWEToggle;
     public UnityEngine.UI.Toggle showDuplicateNodesToggle;
+    public UnityEngine.UI.Toggle changeBallSize;
 
     public List<GraphReader> cveList = new List<GraphReader>();
     public List<GraphReader> sbomList = new List<GraphReader>();
@@ -373,6 +375,11 @@ public class MenuInteraction : MonoBehaviour
                 determineMaxLevel();
                 Debug.Log("REMOVE: " + graph.dbid);
                 PositionAllGraphs(sbomList);
+
+                if(showCWEToggle.isOn)
+                {
+                    ReselectCVE();
+                }
                 return;
             }
         }
@@ -390,6 +397,12 @@ public class MenuInteraction : MonoBehaviour
         sbomList.Add(newGraph);
         InitSliders();
         PositionAllGraphs(sbomList);
+
+        //SHOW CVE
+        if (showCWEToggle.isOn)
+        {
+            ReselectCVE();
+        }
     }
 
     public void CompareSBOM(string id1, string id2, List<String> sboms)
@@ -432,6 +445,7 @@ public class MenuInteraction : MonoBehaviour
         newGraph.ColorDataBalls();
         newGraph.CreateCategories();
         newGraph.AddSbomLabel();
+        newGraph.CountRelationshipsAndDetermineMax();
 
         //Delete both Graphs
         Graph1.Initialization();
@@ -644,6 +658,12 @@ public class MenuInteraction : MonoBehaviour
         InitSliders();
         
         PositionAllGraphs(sbomList);
+
+        //SHOW CVE
+        if (showCWEToggle.isOn)
+        {
+            ReselectCVE();
+        }
     }
 
     [System.Serializable]
@@ -656,35 +676,55 @@ public class MenuInteraction : MonoBehaviour
     {
         if (showCWEToggle.isOn) 
         {
-            string field = "cveMetadata.cveId";
+            GetCVEData();
+        } 
+        else
+        {
+            ClearCVE();
+        }
+    }
 
-            List<string> CVEIds = new List<string>();
+    public void ReselectCVE()
+    {
+        ClearCVE();
 
-            foreach (var graph in sbomList)
+        GetCVEData();
+    }
+
+    public void GetCVEData()
+    {
+        string field = "cveMetadata.cveId";
+
+        List<string> CVEIds = new List<string>();
+
+        foreach (var graph in sbomList)
+        {
+            foreach (DataObject dobj in graph.dataObjects)
             {
-                foreach (DataObject dobj in graph.dataObjects)
+                if (dobj.key.Contains("CVE"))
                 {
-                    if (dobj.key.Contains("CVE"))
+                    if(!CVEIds.Contains(dobj.key))
                     {
                         CVEIds.Add(dobj.key);
                     }
                 }
             }
-
-            string json = JsonUtility.ToJson(new StringListWrapper { strings = CVEIds });
-
-            //StartCoroutine(dbHandler.GetCVEDataBySubstringAndField(searchCWE_ID, field, ShowAllCVENodes));
-            StartCoroutine(dbHandler.GetAllCVEDataBySubstringAndField(json, field, ShowAllCVENodes));
-        } 
-        else
-        {
-            foreach(GraphReader dobj in cveList)
-            {
-                dobj.Initialization();
-            }
-
-            cveList.Clear();
         }
+
+        string json = JsonUtility.ToJson(new StringListWrapper { strings = CVEIds });
+
+        //StartCoroutine(dbHandler.GetCVEDataBySubstringAndField(searchCWE_ID, field, ShowAllCVENodes));
+        StartCoroutine(dbHandler.GetAllCVEDataBySubstringAndField(json, field, ShowAllCVENodes));
+    }
+
+    public void ClearCVE()
+    {
+        foreach (GraphReader dobj in cveList)
+        {
+            dobj.Initialization();
+        }
+
+        cveList.Clear();
     }
 
     public void ShowAllCVENodes(List<string> cveData)
@@ -722,8 +762,9 @@ public class MenuInteraction : MonoBehaviour
 
                             GameObject line = cveGraph.ld.CreateLine(pointlist,true);
                             cveDobj.relationship_line_parent.Add(line);
-                        }
+                            cveDobj.children.Add(sbomDobj);
 
+                        }
 
                     }
                 }
@@ -731,6 +772,44 @@ public class MenuInteraction : MonoBehaviour
         }
     }
 
+    /*
+    public void CheckCVEConnection()
+    {
+        List<GraphReader> saveList = new List<GraphReader>();
+
+        foreach(GraphReader cve in cveList)
+        {
+            foreach(DataObject dobj in cve.dataObjects)
+            {
+                if(dobj.children.Count > 0)
+                {
+                    foreach(DataObject child in dobj.children)
+                    {
+                        if (child != null)
+                        {
+                            if (!saveList.Contains(cve))
+                            {
+                                Debug.Log("CVE SAVED");
+                                saveList.Add(cve);
+                            }
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+
+        foreach (GraphReader cve in cveList)
+        {
+            if(!saveList.Contains(cve))
+            {
+                cve.Initialization();
+            }
+        }
+        cveList.Clear();
+        cveList = saveList;
+    }
+    */
     public void PositionAllGraphs(List<GraphReader> list)
     {
 
@@ -776,6 +855,9 @@ public class MenuInteraction : MonoBehaviour
 
         //Change Ball Text Size 
         OnSliderValueChanged(sliderTextLength.value);
+
+        //Change Ball Size 
+        EventBallSizeDependingOnRelationships();
     }
 
     public void ChangeBallRotation(GraphReader g)
@@ -831,20 +913,6 @@ public class MenuInteraction : MonoBehaviour
         return bounds.extents.x;
     }
 
-    public int NumberRelationshipsOfNode(DataObject obj, GraphReader g)
-    {
-        int relations = obj.parent.Count;
-        foreach(DataObject node in g.dataObjects)
-        {
-            if(node.parent.Contains(obj))
-            {
-                relations++;
-            }
-        }
-
-        return relations;
-    }
-
     public void ShowNodePositionInMenu(GameObject ball)
     {
         //Graph Node Clicked
@@ -860,7 +928,17 @@ public class MenuInteraction : MonoBehaviour
                     ShowPositionInJson(dobj, graph);
                     activateWindow = true;
                     jsonMenu.SetActive(activateWindow); 
-                    selectedNode.text = "<color=#550000>Type: </color>" + dobj.key + "\n <color=#550000>Value:</color> " + dobj.value + "\n <color=#550000>Relationships:</color> " + NumberRelationshipsOfNode(dobj, graph);
+
+                    if(dobj.value != "")
+                    {
+                        selectedNode.text = "<color=#550000>Type: </color>" + dobj.key + "\n <color=#550000>Value:</color> " + dobj.value + "\n <color=#550000>Relationships:</color> " + dobj.nr_relationships;
+
+                    }
+                    else
+                    {
+                        selectedNode.text = "<color=#550000>Type: </color>" + dobj.key + "\n <color=#550000>Relationships:</color> " + dobj.nr_relationships;
+
+                    }
                     return;
                 }
             }
@@ -1142,4 +1220,33 @@ public class MenuInteraction : MonoBehaviour
         textUI.text = text;
     }
 
+    public void EventBallSizeDependingOnRelationships()
+    {
+        foreach (GraphReader g in sbomList)
+        {
+            if(changeBallSize.isOn)
+            {
+                g.IncreaseBallSizeDependingOnRelationships(0.65f);
+            } 
+            else
+            {
+                g.IncreaseBallSizeDependingOnRelationships(1f);
+            }
+        }
+    }
+
+    public void SearchOnlyWithinSelectedType()
+    {
+
+    }
+
+    public void SearchHierarchiesFilteredBySelection()
+    {
+
+    }
+
+    public void SearchDependenciesFilteredBySelection()
+    {
+
+    }
 }

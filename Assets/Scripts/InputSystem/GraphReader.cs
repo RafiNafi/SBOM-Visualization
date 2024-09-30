@@ -16,6 +16,7 @@ using UnityEngine.Rendering.Universal;
 using UnityEngine.UI;
 using UnityEngine.UIElements;
 using UnityEngine.XR.Interaction.Toolkit;
+using static System.Net.Mime.MediaTypeNames;
 
 
 public class GraphReader
@@ -26,6 +27,7 @@ public class GraphReader
 
     public string dbid;
     public string sbomName;
+    public int highest_relationship_count = 0;
 
     public List<DataObject> dataObjects = new List<DataObject>();
     public Dictionary<int, int> level_occurrences = new Dictionary<int, int>();
@@ -44,6 +46,7 @@ public class GraphReader
     public int lineCounter = 0;
 
     public GameObject sbomLabel;
+    public GameObject categoryPlane;
 
     public void CreateGraph(string sbomElement, string graphType, bool showDuplicateNodes)
     {
@@ -60,6 +63,7 @@ public class GraphReader
         ColorDataBalls();
         CreateCategories();
         AddSbomLabel();
+        CountRelationshipsAndDetermineMax();
     }
 
     public void Initialization()
@@ -583,6 +587,10 @@ public class GraphReader
             BoundaryBox.GetComponent<Renderer>().bounds.min.y, (BoundaryBox.GetComponent<Renderer>().bounds.max.z + BoundaryBox.GetComponent<Renderer>().bounds.min.z) / 2);
 
         AdjustTextFontSize();
+
+        //Move Plane
+        MovePlanePosition(position);
+
     }
 
     public void MoveBoundaryBox(GameObject box, Vector3 position)
@@ -599,6 +607,11 @@ public class GraphReader
         }
 
         cubeRenderer.SetPositions(positions);
+    }
+
+    public void MovePlanePosition(Vector3 position) 
+    {
+        categoryPlane.transform.position += position;
     }
 
 
@@ -771,15 +784,15 @@ public class GraphReader
 
         MakeCategoryBoundaries(loopCount);
 
+
         //Make Floor to walk for category inspection
-        /*
-        GameObject plane = GameObject.CreatePrimitive(PrimitiveType.Plane);
-        plane.transform.position = new Vector3(0, 1, 0);
-        plane.transform.localScale = new Vector3(sideX/10f, 1f, sideZ/10f);
-        BoxCollider boxCollider = plane.AddComponent<BoxCollider>();
+        GameObject prefab = Resources.Load<GameObject>("PlaneFloor");
+        categoryPlane = MonoBehaviour.Instantiate(prefab, Vector3.zero, Quaternion.identity);
+        categoryPlane.transform.localScale = new Vector3((sideX - 1f) / 10f, 0.1f, (sideZ - 1f) / 10f);
+        categoryPlane.transform.position = new Vector3(BoundaryBoxCategories.GetComponent<Renderer>().bounds.max.x - (sideX/2),
+            BoundaryBoxCategories.GetComponent<Renderer>().bounds.min.y + 0.5f, BoundaryBoxCategories.GetComponent<Renderer>().bounds.max.z - (sideZ)/ 2);
         //plane.GetComponent<MeshRenderer>().enabled = false;
-        //boxCollider.size = new Vector3(sideX, 0.1f, sideZ);
-        */
+
     }
 
     public void MakeCategoryBoundaries(int addedHeight)
@@ -894,5 +907,41 @@ public class GraphReader
         //sbomLabel.transform.localPosition += new Vector3(0, sbomLabelText.preferredHeight, 0);
 
         Canvas.ForceUpdateCanvases();
+    }
+
+    public void CountRelationshipsAndDetermineMax()
+    {
+
+        foreach(DataObject obj in dataObjects)
+        {
+            obj.nr_relationships = NumberRelationshipsOfNode(obj);
+            highest_relationship_count = Mathf.Max(highest_relationship_count, obj.nr_relationships);
+        }
+    }
+
+    public void IncreaseBallSizeDependingOnRelationships(float baseValue)
+    {
+        float multiplier = 1f - baseValue;
+
+        foreach (DataObject obj in dataObjects)
+        {
+            float relevance = (obj.nr_relationships / (float)highest_relationship_count) * multiplier;
+            obj.DataBall.transform.localScale = new Vector3(baseValue + relevance, baseValue + relevance, baseValue + relevance);
+        }
+    }
+
+
+    public int NumberRelationshipsOfNode(DataObject obj)
+    {
+        int relations = obj.parent.Count;
+        foreach (DataObject node in dataObjects)
+        {
+            if (node.parent.Contains(obj))
+            {
+                relations++;
+            }
+        }
+
+        return relations;
     }
 }
