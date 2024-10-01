@@ -20,6 +20,8 @@ using static Unity.VisualScripting.Metadata;
 using UnityEngine.XR.OpenXR.Input;
 using static UnityEditor.Experimental.AssetDatabaseExperimental.AssetDatabaseCounters;
 using UnityEngine.XR.Interaction.Toolkit;
+using UnityEngine.InputSystem;
+using static System.Net.Mime.MediaTypeNames;
 public class MenuInteraction : MonoBehaviour
 {
 
@@ -46,6 +48,10 @@ public class MenuInteraction : MonoBehaviour
     public UnityEngine.UI.Toggle showDuplicateNodesToggle;
     public UnityEngine.UI.Toggle changeBallSize;
 
+    public UnityEngine.UI.Toggle WithinSelectedTypeToggle;
+    public UnityEngine.UI.Toggle HierarchiesFilteredSelectionToggle;
+    public UnityEngine.UI.Toggle DependenciesFilteredSelectionToggle;
+
     public List<GraphReader> cveList = new List<GraphReader>();
     public List<GraphReader> sbomList = new List<GraphReader>();
 
@@ -67,6 +73,7 @@ public class MenuInteraction : MonoBehaviour
     public List<(string, GameObject, TMP_Dropdown.OptionData, string)> selectionlist = new List<(string, GameObject, TMP_Dropdown.OptionData, string)>();
 
     public string previousSelectedType = "";
+    public GraphReader previousGraph;
 
     // Start is called before the first frame update
     void Start()
@@ -571,6 +578,28 @@ public class MenuInteraction : MonoBehaviour
     {
         string text = inputSearch.text;
 
+        
+        if(WithinSelectedTypeToggle.isOn)
+        {
+            SearchOnlyWithinSelectedType(text);
+        }
+        else if (HierarchiesFilteredSelectionToggle.isOn)
+        {
+            SearchHierarchiesFilteredBySelection(text);
+        }
+        else if(DependenciesFilteredSelectionToggle.isOn)
+        {
+            SearchDependenciesFilteredBySelection(text);
+        }
+        else
+        {
+            StandardSearch(text);
+        }
+        
+    }
+
+    public void StandardSearch(string text)
+    {
         foreach (GraphReader graph in sbomList)
         {
             if (text != null && text != "")
@@ -592,7 +621,7 @@ public class MenuInteraction : MonoBehaviour
             {
                 foreach (DataObject obj in graph.dataObjects)
                 {
-                    ChangeNodeAndLinesTransparency(obj, 1f, 0.9f,1f);
+                    ChangeNodeAndLinesTransparency(obj, 1f, 0.9f, 1f);
                 }
             }
         }
@@ -632,6 +661,24 @@ public class MenuInteraction : MonoBehaviour
         UnityEngine.Color currentColor = t.color;
         currentColor.a = valueText;
         t.color = currentColor;
+    }
+
+    public void ChangeOnlyLineTransparency(DataObject from, DataObject to, float valueLines)
+    {
+        ld = new LineDrawer(0.04f);
+
+        foreach (var line in from.relationship_line_parent)
+        {
+            LineRenderer lr = line.GetComponent<LineRenderer>();
+
+            Vector3 startPosition = lr.GetPosition(0);
+            Vector3 endPosition = lr.GetPosition(lr.positionCount - 1);
+
+            if ((Vector3.Distance(startPosition, from.DataBall.transform.position) <= 0.0001f) && (Vector3.Distance(endPosition, to.DataBall.transform.position) <= 0.0001f))
+            {
+                lr.colorGradient = ld.GetBlueGradientWithTransparency(valueLines);
+            }
+        }
     }
 
     public void ChangeGraphStyle()
@@ -958,12 +1005,18 @@ public class MenuInteraction : MonoBehaviour
                     if(previousSelectedType == textui.text)
                     {
                         MakeAllNodesVisible();
+                        previousSelectedType = "";
+                        previousGraph = null;
                     }
                     else
                     {
                         MakeAllNodesVisible();
                         MakeOtherNodesTransparentWithString(textui.text, graph);
                         previousSelectedType = textui.text;
+                        previousGraph = graph;
+
+                        //TEST ONLY
+                        SearchOnlyWithinSelectedType("external");
                     }
 
                     return;
@@ -1033,6 +1086,14 @@ public class MenuInteraction : MonoBehaviour
             {
                 ChangeNodeAndLinesTransparency(other, 1f, 0.9f, 1f);
             }
+        }
+    }
+
+    public void MakeAllNodesInGraphInvisible(GraphReader g)
+    {
+        foreach (DataObject other in g.dataObjects)
+        {
+            ChangeNodeAndLinesTransparency(other, 0.2f, 0.1f, 0.3f);
         }
     }
 
@@ -1235,17 +1296,54 @@ public class MenuInteraction : MonoBehaviour
         }
     }
 
-    public void SearchOnlyWithinSelectedType()
+    public void SearchOnlyWithinSelectedType(string text)
+    {
+
+        MakeAllNodesInGraphInvisible(previousGraph);
+
+        List<DataObject> selectedTypeNodes = new List<DataObject>();
+
+        foreach (DataObject other in previousGraph.dataObjects)
+        {
+            if (previousSelectedType == other.key || previousSelectedType == (other.key.Substring(0, other.key.Length - other.suffix.Length)))
+            {
+                selectedTypeNodes.Add(other);
+            }
+        }
+
+        if (text != null && text != "")
+        {
+            foreach (DataObject obj in previousGraph.dataObjects)
+            {
+                foreach (DataObject dobj in selectedTypeNodes)
+                {
+                    if (dobj.parent.Contains(obj) || obj.parent.Contains(dobj))
+                    {
+                        ChangeOnlyNodeTransparency(obj, 1f, 1f);
+                        ChangeOnlyNodeTransparency(dobj, 1f, 1f);
+                        ChangeOnlyLineTransparency(obj, dobj, 0.9f);
+                        ChangeOnlyLineTransparency(dobj, obj, 0.9f);
+                    }
+                }
+            }
+        }
+        else
+        {
+            foreach (DataObject obj in previousGraph.dataObjects)
+            {
+                ChangeNodeAndLinesTransparency(obj, 1f, 0.9f, 1f);
+            }
+            previousGraph = null;
+            previousSelectedType = "";
+        }
+    }
+
+    public void SearchHierarchiesFilteredBySelection(string text)
     {
 
     }
 
-    public void SearchHierarchiesFilteredBySelection()
-    {
-
-    }
-
-    public void SearchDependenciesFilteredBySelection()
+    public void SearchDependenciesFilteredBySelection(string text)
     {
 
     }

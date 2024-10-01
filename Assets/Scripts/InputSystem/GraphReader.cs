@@ -752,8 +752,9 @@ public class GraphReader
                         {
                             addZ = 1;
                         }
-
-                        Vector3 v = new Vector3(0 - x * addX - 1f, 0 + loopCount, 0 + z * addZ + 1f);
+                        //Testing
+                        Vector3 v = new Vector3(0 - x * addX - 1f, 0 + loopCount - 23, 0 + z * addZ + 1f);
+                        //Vector3 v = new Vector3(0 - x * addX - 1f, 0 + loopCount, 0 + z * addZ + 1f);
 
                         if ((-1 * sideX) > v.x || sideZ < v.z)
                         {
