@@ -75,6 +75,8 @@ public class MenuInteraction : MonoBehaviour
     public string previousSelectedType = "";
     public GraphReader previousGraph;
 
+    public List<string> expandedNodes = new List<string>();
+
     // Start is called before the first frame update
     void Start()
     {
@@ -862,6 +864,7 @@ public class MenuInteraction : MonoBehaviour
 
         int multiplier = 1;
 
+        //CVE position
         if (list.Count > 0)
         {
             if (list[0].isCVE)
@@ -875,6 +878,7 @@ public class MenuInteraction : MonoBehaviour
 
         for (int i = 0; i < list.Count; i++)
         {
+            //Graph
             float radius = GetGraphRadiusX(list[i].BoundaryBox);
 
             Vector3 move = new Vector3(multiplier * maxRadius + (multiplier * 12), 0, edge.z);
@@ -882,6 +886,7 @@ public class MenuInteraction : MonoBehaviour
             list[i].offset = move;
 
 
+            //Boundary Box
             edge = new Vector3(list[i].BoundaryBox.GetComponent<Renderer>().bounds.min.x, 0, list[i].BoundaryBox.GetComponent<Renderer>().bounds.max.z);
 
             if (i - 1 >= 0)
@@ -892,11 +897,12 @@ public class MenuInteraction : MonoBehaviour
 
             }
 
+            //Categories
             Vector3 adjustCategoriesEdge = new Vector3(list[i].BoundaryBox.GetComponent<Renderer>().bounds.max.x, list[i].BoundaryBox.GetComponent<Renderer>().bounds.max.y + 1, list[i].BoundaryBox.GetComponent<Renderer>().bounds.min.z);
-
             PositionCategoryBalls(list[i], adjustCategoriesEdge - list[i].offsetCategories);
             list[i].offsetCategories = adjustCategoriesEdge;
 
+            //Ball Text Rotation
             ChangeBallRotation(list[i]);
         }
 
@@ -912,8 +918,8 @@ public class MenuInteraction : MonoBehaviour
         foreach (DataObject dobj in g.dataObjects)
         {
             Vector3 directionToTarget = camSphere.transform.position - dobj.DataBall.transform.position;
-
-            dobj.DataBall.transform.rotation = Quaternion.LookRotation(-directionToTarget);
+            Vector3 dir = -directionToTarget;
+            dobj.DataBall.transform.rotation = Quaternion.LookRotation(new Vector3(dir.x, 0, dir.z));
         }
     }
 
@@ -946,12 +952,6 @@ public class MenuInteraction : MonoBehaviour
         }
 
         return maxRadius;
-    }
-
-    public float GetGraphRadius(GameObject obj)
-    {
-        var bounds = obj.GetComponent<Renderer>().bounds;
-        return Mathf.Max(bounds.extents.x, bounds.extents.z);
     }
 
     public float GetGraphRadiusX(GameObject obj)
@@ -1015,8 +1015,12 @@ public class MenuInteraction : MonoBehaviour
                         previousSelectedType = textui.text;
                         previousGraph = graph;
 
-                        //TEST ONLY
-                        SearchOnlyWithinSelectedType("external");
+
+                        //TESTS ONLY
+                        //SearchOnlyWithinSelectedType("array"); //Search Only In Selected Type
+                        //SearchDependenciesFilteredBySelection("externalReferences-1"); //Search in all connected neighbours
+                        //SearchHierarchiesFilteredBySelection("SHA-512"); //Search complete Hirarchies of nodes
+                        //StandardSearch("DESCRIBES");
                     }
 
                     return;
@@ -1074,7 +1078,7 @@ public class MenuInteraction : MonoBehaviour
     public void CloseJSONPosWindow()
     {
         MakeAllNodesVisible();
-
+        expandedNodes.Clear();
         activateWindow = false;
     }
 
@@ -1199,7 +1203,7 @@ public class MenuInteraction : MonoBehaviour
         {
             foreach (DataObject other in graph.dataObjects)
             {
-                if (other.GetHashCode().ToString() == linkHashID)
+                if (other.GetHashCode().ToString() == linkHashID && !expandedNodes.Contains(linkHashID + "Pos" + dropdownPositions.value))
                 {
                     TextMeshProUGUI text = scrollViewContentPositions.GetComponent<TextMeshProUGUI>();
 
@@ -1207,7 +1211,7 @@ public class MenuInteraction : MonoBehaviour
                     string addedDisplayText = "";
                     int maxSequence = GetMaxSequence(displayText);
                     string tabs = "";
-                    Debug.Log(maxSequence);
+                    //Debug.Log(maxSequence);
 
                     for (int i = 0; i < maxSequence + countTabs; i++)
                     {
@@ -1235,6 +1239,7 @@ public class MenuInteraction : MonoBehaviour
                     
                     text.text = displayText;
 
+                    expandedNodes.Add(linkHashID + "Pos" + dropdownPositions.value);
                     return;
                 }
             }
@@ -1271,7 +1276,7 @@ public class MenuInteraction : MonoBehaviour
             AddTextToScrollContent(textsPosition[dropdownPositions.options[index].text]);
 
         }
-
+        //expandedNodes.Clear();
     }
 
     public void AddTextToScrollContent(string text)
@@ -1313,17 +1318,11 @@ public class MenuInteraction : MonoBehaviour
 
         if (text != null && text != "")
         {
-            foreach (DataObject obj in previousGraph.dataObjects)
+            foreach (DataObject dobj in selectedTypeNodes)
             {
-                foreach (DataObject dobj in selectedTypeNodes)
+                if (dobj.key.Contains(text) || dobj.value.Contains(text))
                 {
-                    if (dobj.parent.Contains(obj) || obj.parent.Contains(dobj))
-                    {
-                        ChangeOnlyNodeTransparency(obj, 1f, 1f);
-                        ChangeOnlyNodeTransparency(dobj, 1f, 1f);
-                        ChangeOnlyLineTransparency(obj, dobj, 0.9f);
-                        ChangeOnlyLineTransparency(dobj, obj, 0.9f);
-                    }
+                    ChangeOnlyNodeTransparency(dobj, 1f, 1f);
                 }
             }
         }
@@ -1338,13 +1337,130 @@ public class MenuInteraction : MonoBehaviour
         }
     }
 
+
     public void SearchHierarchiesFilteredBySelection(string text)
     {
+        MakeAllNodesInGraphInvisible(previousGraph);
 
+        currentPath = new List<DataObject>();
+        allPaths = new List<List<DataObject>>();
+
+        List<DataObject> selectedTypeNodes = new List<DataObject>();
+
+        foreach (DataObject other in previousGraph.dataObjects)
+        {
+            if (previousSelectedType == other.key || previousSelectedType == (other.key.Substring(0, other.key.Length - other.suffix.Length)))
+            {
+                selectedTypeNodes.Add(other);
+            }
+        }
+
+        foreach (DataObject dobj in previousGraph.dataObjects)
+        {
+            if (dobj.key.Contains(text) || dobj.value.Contains(text))
+            {
+                RecursiveSearchConnectionInTree(dobj, dobj, selectedTypeNodes);
+            }
+        }
+
+        foreach(var path in allPaths)
+        {
+            for(int i=0;i<path.Count;i++) {
+
+                if(i+1 < path.Count)
+                {
+                    Debug.Log(path[i].key + " -> " + path[i+1].key);
+                    ChangeOnlyLineTransparency(path[i], path[i + 1], 0.9f);
+                    ChangeOnlyLineTransparency(path[i + 1], path[i], 0.9f);
+                }
+            }
+        }
     }
+
+    List<DataObject> currentPath = new List<DataObject>();    
+    List<List<DataObject>> allPaths = new List<List<DataObject>>(); 
+
+    public void RecursiveSearchConnectionInTree(DataObject startNode, DataObject node, List<DataObject>  selectedTypeNodes)
+    {
+        currentPath.Add(node);
+
+        if (node == null || node.parent.Count <= 0)
+        {
+            return;
+        }
+
+        foreach (DataObject parent in node.parent)
+        {
+            if (selectedTypeNodes.Contains(parent))
+            {
+                ChangeOnlyNodeTransparency(startNode, 1f, 1f);
+                ChangeOnlyNodeTransparency(parent, 1f, 1f);
+
+                allPaths.Add(new List<DataObject>(currentPath));
+
+                currentPath = new List<DataObject>
+                {
+                    node
+                };
+
+                RecursiveSearchConnectionInTree(startNode, parent, selectedTypeNodes);
+            }
+            else
+            {
+                RecursiveSearchConnectionInTree(startNode, parent, selectedTypeNodes);
+            }
+
+        }
+
+        if(currentPath.Count > 0)
+        {
+            currentPath.RemoveAt(currentPath.Count - 1);
+        }
+    }
+
 
     public void SearchDependenciesFilteredBySelection(string text)
     {
 
+        MakeAllNodesInGraphInvisible(previousGraph);
+
+        List<DataObject> selectedTypeNodes = new List<DataObject>();
+
+        foreach (DataObject other in previousGraph.dataObjects)
+        {
+            if (previousSelectedType == other.key || previousSelectedType == (other.key.Substring(0, other.key.Length - other.suffix.Length)))
+            {
+                selectedTypeNodes.Add(other);
+            }
+        }
+
+        if (text != null && text != "")
+        {
+            foreach (DataObject obj in previousGraph.dataObjects)
+            {
+                foreach (DataObject dobj in selectedTypeNodes)
+                {
+                    if (dobj.parent.Contains(obj) || obj.parent.Contains(dobj))
+                    {
+                        if(obj.key.Contains(text) ||  obj.value.Contains(text))
+                        {
+                            ChangeOnlyNodeTransparency(obj, 1f, 1f);
+                            ChangeOnlyNodeTransparency(dobj, 1f, 1f);
+                            ChangeOnlyLineTransparency(obj, dobj, 0.9f);
+                            ChangeOnlyLineTransparency(dobj, obj, 0.9f);
+                        }
+                    }
+                }
+            }
+        }
+        else
+        {
+            foreach (DataObject obj in previousGraph.dataObjects)
+            {
+                ChangeNodeAndLinesTransparency(obj, 1f, 0.9f, 1f);
+            }
+            previousGraph = null;
+            previousSelectedType = "";
+        }
     }
 }

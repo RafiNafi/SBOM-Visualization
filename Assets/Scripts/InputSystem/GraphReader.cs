@@ -10,6 +10,7 @@ using System.Linq;
 using System.Security.Policy;
 using TMPro;
 using Unity.VisualScripting;
+using UnityEditor.Experimental.GraphView;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.Rendering.Universal;
@@ -359,6 +360,10 @@ public class GraphReader
                 PositionAsRadialTidyTree();
                 break;
 
+            case "Stacking Radial Tree":
+                PositionAsStackingRadialTidyTree();
+                break;
+
             case "Force-directed Graph":
                 PositionAsForceDirectedGraph();
                 break;
@@ -415,52 +420,122 @@ public class GraphReader
         }
     }
 
+    public void PositionAsStackingRadialTidyTree()
+    {
+        float ballDiameter = 1f;
+        float previousRadius = ballDiameter / 2f;
+        int incHeight = 0;
 
+        foreach (int key in level_occurrences.Keys)
+        {
+            int numberOfBalls = level_occurrences[key];
+            int counter = 0;
+            float radius = 1f;
+            int balls = numberOfBalls;
+
+            if (numberOfBalls > 50) 
+            {
+                balls = 50;
+
+                if ((2 * Mathf.Sin(Mathf.PI / balls)) > 0)
+                {
+                    radius = previousRadius + (ballDiameter / (2 * Mathf.Sin(Mathf.PI / balls)));
+                }
+            } 
+            else
+            {
+                if ((2 * Mathf.Sin(Mathf.PI / numberOfBalls)) > 0)
+                {
+                    radius = previousRadius + (ballDiameter / (2 * Mathf.Sin(Mathf.PI / numberOfBalls)));
+                }
+            }
+
+            for (int i = 0; i < dataObjects.Count; i++)
+            {
+                if (key == dataObjects[i].level)
+                {
+                    float angle = counter * Mathf.PI * 2 / balls;
+                    float x = Mathf.Cos(angle) * radius;
+                    float z = Mathf.Sin(angle) * radius;
+
+                    Vector3 position = new Vector3(x, 0 + incHeight + (counter/49)*2, z);
+
+                    dataObjects[i].DataBall.transform.position = position;
+                    counter++;
+                }
+
+            }
+            incHeight += 2;
+            previousRadius = radius + ballDiameter;
+        }
+    }
 
     public void PositionAsForceDirectedGraph()
     {
-        float attractionForce = 0.7f;
-        float repulsionForce = 0.8f;
+
+        //CountRelationshipsAndDetermineMax();
+
+        float attractionForce = 0.8f;
+        float repulsionForce = 1f; //higher for more repulsion between nodes
         float damping = 0.9f;
+
+        foreach (DataObject dobj in dataObjects) 
+        {
+            dobj.DataBall.transform.position = UnityEngine.Random.insideUnitSphere * 10; //higher value for bigger spawn radius
+        }
 
         foreach (DataObject node in dataObjects)
         {
             Vector3 force = Vector3.zero;
-            node.DataBall.transform.position = UnityEngine.Random.insideUnitSphere * 10;
 
             foreach (DataObject other in dataObjects)
             {
-                if (node != other)
+                if (node != other && !other.parent.Contains(node) && !node.parent.Contains(other))
                 {
                     Vector3 direction = node.DataBall.transform.position - other.DataBall.transform.position;
                     float distance = direction.magnitude;
-                    if (distance > 0)
+
+                    if (distance == 0)
                     {
-                        force += direction.normalized * repulsionForce  / (distance * distance);
+                        distance = 1;
                     }
+
+                    force += direction.normalized * repulsionForce / (distance * distance);
+                }
+
+                if(node != other && other.parent.Contains(node) || node.parent.Contains(other))
+                {
+
+                    Vector3 direction = other.DataBall.transform.position - node.DataBall.transform.position;
+                    float distance = direction.magnitude;
+                    force += direction.normalized * attractionForce * distance;
+                }
+
+            }
+
+            node.velocity = (node.velocity + force) * damping;   
+            
+            /*
+            //added force for children
+            foreach(DataObject other in dataObjects) 
+            {
+                if(other.parent.Contains(node))
+                {
+                    other.velocity = (node.velocity + force * damping);
                 }
             }
-            
-
-            // Apply attractive force to connected nodes
-            foreach (DataObject neighbor in node.parent)
-            {
-                Vector3 direction = neighbor.DataBall.transform.position - node.DataBall.transform.position;
-                float distance = direction.magnitude;
-                force += direction.normalized * attractionForce * distance;
-            }
-
-            node.velocity = (node.velocity + force) * damping;
+            */
         }
 
-        UpdatePositions();
+        AddVelocityToNodes();
     }
 
-    public void UpdatePositions()
+    public void AddVelocityToNodes()
     {
         foreach (DataObject node in dataObjects)
         {
             node.DataBall.transform.position += node.velocity;
+            node.DataBall.transform.position = Vector3.ClampMagnitude(node.DataBall.transform.position, 100f + Mathf.Sqrt(dataObjects.Count));
         }
     }
 
@@ -753,8 +828,8 @@ public class GraphReader
                             addZ = 1;
                         }
                         //Testing
-                        Vector3 v = new Vector3(0 - x * addX - 1f, 0 + loopCount - 23, 0 + z * addZ + 1f);
-                        //Vector3 v = new Vector3(0 - x * addX - 1f, 0 + loopCount, 0 + z * addZ + 1f);
+                        //Vector3 v = new Vector3(0 - x * addX - 1f, 0 + loopCount - 23, 0 + z * addZ + 1f);
+                        Vector3 v = new Vector3(0 - x * addX - 1f, 0 + loopCount, 0 + z * addZ + 1f);
 
                         if ((-1 * sideX) > v.x || sideZ < v.z)
                         {
