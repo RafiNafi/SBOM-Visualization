@@ -77,7 +77,7 @@ public class LineDrawer
         var colors = new GradientColorKey[]{
             new GradientColorKey(new Color(1, 0, 0, transparency), 0.0f),
             new GradientColorKey(new Color(1, 0, 0, transparency), 0.8f),
-            new GradientColorKey(new Color(1f, 185f/255f, 185f/255f, transparency),1f)
+            new GradientColorKey(new Color(1f, 200f/255f, 200f/255f, transparency),1f)
             };
 
         GradientAlphaKey[] alphas = new GradientAlphaKey[] {

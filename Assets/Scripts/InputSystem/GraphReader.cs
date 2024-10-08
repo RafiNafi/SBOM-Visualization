@@ -14,10 +14,13 @@ using UnityEditor.Experimental.GraphView;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.Rendering.Universal;
+using UnityEngine.SocialPlatforms;
 using UnityEngine.UI;
 using UnityEngine.UIElements;
 using UnityEngine.XR.Interaction.Toolkit;
 using static System.Net.Mime.MediaTypeNames;
+using static UnityEditor.ShaderGraph.Internal.KeywordDependentCollection;
+using static UnityEngine.Rendering.DebugUI;
 
 
 public class GraphReader
@@ -60,11 +63,11 @@ public class GraphReader
             FuseSameNodes();
         }
 
+        CountRelationshipsAndDetermineMax();
         PositionDataBalls(graphType);
         ColorDataBalls();
         CreateCategories();
         AddSbomLabel();
-        CountRelationshipsAndDetermineMax();
     }
 
     public void Initialization()
@@ -95,6 +98,11 @@ public class GraphReader
         if (sbomLabel != null)
         {
             MonoBehaviour.Destroy (sbomLabel);
+        }
+
+        if (categoryPlane != null)
+        {
+            MonoBehaviour.Destroy(categoryPlane);
         }
 
         dataObjects.Clear();
@@ -361,7 +369,8 @@ public class GraphReader
                 break;
 
             case "Stacking Radial Tree":
-                PositionAsStackingRadialTidyTree();
+                //PositionAsStackingRadialTidyTree();
+                PositionAsStackingRadialTidyTreeNoOverlap();
                 break;
 
             case "Force-directed Graph":
@@ -422,7 +431,7 @@ public class GraphReader
 
     public void PositionAsStackingRadialTidyTree()
     {
-        float ballDiameter = 1f;
+        float ballDiameter = 1.1f;
         float previousRadius = ballDiameter / 2f;
         int incHeight = 0;
 
@@ -470,10 +479,205 @@ public class GraphReader
         }
     }
 
+    
+    public void PositionAsStackingRadialTidyTreeNoOverlap()
+    {
+        
+        float ballDiameter = 1f;
+        float previousRadius = ballDiameter / 2f;
+        int incHeight = 0;
+        float maximumBallsPerLevel = 60;
+
+        foreach (int key in level_occurrences.Keys)
+        {
+            List<Vector3> positionsV = new List<Vector3>();
+            Dictionary<DataObject, List<DataObject>> parentChildrenPairs = new Dictionary<DataObject, List<DataObject>>();
+
+            int numberOfLayers = Mathf.CeilToInt(level_occurrences[key] / maximumBallsPerLevel);
+            int numberOfBalls = level_occurrences[key];
+            float radius = 1f;
+            int numberOfChildrenBalls = 1;
+
+            if (level_occurrences.ContainsKey(key+1))
+            {
+                numberOfChildrenBalls = level_occurrences[key + 1];
+            }
+            
+            if ((2 * Mathf.Sin(Mathf.PI / numberOfBalls)) > 0)
+            {
+                radius = previousRadius + (ballDiameter / (2 * Mathf.Sin(Mathf.PI / numberOfBalls)));
+
+                if (numberOfBalls > maximumBallsPerLevel)
+                {
+                    radius = previousRadius + (ballDiameter / (2 * Mathf.Sin(Mathf.PI / maximumBallsPerLevel)));
+                }
+            }
+
+            int ballCount = Mathf.FloorToInt(2 * Mathf.PI * radius / ballDiameter);
+            float angleIncrement = 360f / ballCount;
+
+
+            for(int h=0;h<numberOfLayers;h++)
+            {
+                //Position Pre-Save
+                for (int i = 0; i < ballCount; i++)
+                {
+                    //float angle = i * 2 * Mathf.PI / numberOfBalls;
+
+                    float angleInDegrees = i * angleIncrement;
+                    float angle = angleInDegrees * Mathf.Deg2Rad;
+
+                    float x = Mathf.Cos(angle) * radius;
+                    float z = Mathf.Sin(angle) * radius;
+
+                    Vector3 position = new Vector3(x, 0 + incHeight + h*2, z);
+
+                    positionsV.Add(position);
+                }
+            }
+
+            int numberPositions = positionsV.Count;
+            //int NodesWithoutChild = 0;
+            //List<DataObject> nodesChecked = new List<DataObject>();
+
+            //Count Parents with Children
+            for (int i = 0; i < dataObjects.Count; i++)
+            {
+                if (key == dataObjects[i].level)
+                { 
+                    if(dataObjects[i].parent.Count == 0)
+                    {
+                        parentChildrenPairs.Add(dataObjects[i], new List<DataObject> { dataObjects[i] });
+                        break;
+                    }
+
+                    if (parentChildrenPairs.ContainsKey(dataObjects[i].parent[0]))
+                    {
+                        parentChildrenPairs[dataObjects[i].parent[0]].Add(dataObjects[i]);
+                    }
+                    else
+                    {
+                        parentChildrenPairs.Add(dataObjects[i].parent[0], new List<DataObject> { dataObjects[i] });
+                    }
+
+                    /*
+                    if (dataObjects[i].nr_children == 0)
+                    {
+                        NodesWithoutChild++;
+                        nodesChecked.Add(dataObjects[i]);
+                    }
+                    */
+
+                }
+            }
+
+            /*
+            for (int i = 0; i < dataObjects.Count; i++)
+            {
+                if (key == dataObjects[i].level && !nodesChecked.Contains(dataObjects[i]))
+                {
+                    float ballsFraction = (float)dataObjects[i].nr_children / ((float)(numberOfChildrenBalls));
+                    int numberClaimedPositions = (int)(ballsFraction * (numberPositions - NodesWithoutChild));
+                        
+                    if(numberClaimedPositions == 0)
+                    {
+                        NodesWithoutChild++;
+                    }
+                }
+            }
+            */
+
+            var sortedparentChildrenDict = parentChildrenPairs.OrderByDescending(kvp => kvp.Value.Count).ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
+
+            foreach (var keyValuePair in sortedparentChildrenDict) 
+            {
+                var parentChildsPair = keyValuePair.Value.OrderByDescending(kvp => kvp.nr_children).ToList();
+
+                foreach (DataObject dobj in parentChildsPair)
+                {
+                    
+                    Vector3 closestPosition = Vector3.zero;
+                    float shortestDistance = Mathf.Infinity;
+
+                    foreach (Vector3 position in positionsV)
+                    {
+                        if (dobj.parent.Count == 0)
+                        {
+                            //ROOT node
+                            closestPosition = position;
+                        }
+                        else if (dobj.parent.Count == 1)
+                        {
+                            //one parent
+                            float distance = Vector3.Distance(dobj.parent[0].DataBall.transform.position, position);
+
+                            if (distance < shortestDistance)
+                            {
+                                shortestDistance = distance;
+                                closestPosition = position;
+                            }
+                        }
+                        else
+                        {
+                            //mutliple parents
+                            float distance = 0;
+
+                            foreach (var parent in dobj.parent)
+                            {
+                                distance += Vector3.Distance(parent.DataBall.transform.position, position);
+                            }
+
+                            if (distance / dobj.parent.Count < shortestDistance)
+                            {
+                                shortestDistance = distance / dobj.parent.Count;
+                                closestPosition = position;
+                            }
+                        }
+                    }
+
+                    dobj.DataBall.transform.position = closestPosition;
+
+
+
+                    //TODO: Fix missing positions (maybe numberClaimedPositions too high)
+                    float ballsFraction = (float)dobj.nr_children / ((float)(numberOfChildrenBalls));
+                    int numberClaimedPositions = (int)(ballsFraction * (numberPositions - numberOfBalls));
+                     
+
+                    /*
+                    Debug.Log(dobj.key);
+                    Debug.Log("POSITIONS:" + numberPositions);
+                    Debug.Log(numberClaimedPositions);
+                    Debug.Log("LAYER:" + key);
+                    */
+
+                    if (numberClaimedPositions == 0)
+                    {
+                        numberClaimedPositions = 1;
+                    }
+                    /*
+                    Debug.Log(dobj.key);
+                    Debug.Log("Fraction: " + ballsFraction);
+                    Debug.Log("numberPositions - NodesWithoutChild: " + (numberPositions - NodesWithoutChild));
+                    Debug.Log("numberClaimedPositions: " + numberClaimedPositions);
+                    Debug.Log("numberPositions: " + numberPositions);
+                    */
+
+                    positionsV = positionsV.OrderBy(pos => Vector3.Distance(pos, closestPosition)).ToList();
+
+                    positionsV.RemoveRange(0, Math.Min(numberClaimedPositions, positionsV.Count));
+                }
+
+            }
+
+            incHeight += 2;
+            previousRadius = radius + ballDiameter;
+        }
+    }
+
+
     public void PositionAsForceDirectedGraph()
     {
-
-        //CountRelationshipsAndDetermineMax();
 
         float attractionForce = 0.8f;
         float repulsionForce = 1f; //higher for more repulsion between nodes
@@ -1009,7 +1213,7 @@ public class GraphReader
 
     public int NumberRelationshipsOfNode(DataObject obj)
     {
-        int relations = obj.parent.Count;
+        int relations = 0;
         foreach (DataObject node in dataObjects)
         {
             if (node.parent.Contains(obj))
@@ -1018,6 +1222,8 @@ public class GraphReader
             }
         }
 
-        return relations;
+        obj.nr_children = relations;
+
+        return relations + obj.parent.Count;
     }
 }

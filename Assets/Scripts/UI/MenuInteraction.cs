@@ -450,11 +450,11 @@ public class MenuInteraction : MonoBehaviour
         RecursiveCompare(Graph1.dataObjects[0], Graph2.dataObjects[0], newGraph.dataObjects[0], Graph1, Graph2, newGraph);
 
         newGraph.CountCategoryNumbers();
+        newGraph.CountRelationshipsAndDetermineMax();
         newGraph.PositionDataBalls(dropdown.options[dropdown.value].text);
         newGraph.ColorDataBalls();
         newGraph.CreateCategories();
         newGraph.AddSbomLabel();
-        newGraph.CountRelationshipsAndDetermineMax();
 
         //Delete both Graphs
         Graph1.Initialization();
@@ -565,68 +565,6 @@ public class MenuInteraction : MonoBehaviour
         }
 
 
-    }
-
-
-    public void OpenKeyboard()
-    {
-        NonNativeKeyboard.Instance.InputField = inputSearch;
-        NonNativeKeyboard.Instance.OnTextSubmitted -= HightlightSearchedNode;
-        NonNativeKeyboard.Instance.OnTextSubmitted += HightlightSearchedNode;
-        NonNativeKeyboard.Instance.PresentKeyboard(); //inputSearch.text
-    }
-
-    public void HightlightSearchedNode(object sender, EventArgs e)
-    {
-        string text = inputSearch.text;
-
-        
-        if(WithinSelectedTypeToggle.isOn)
-        {
-            SearchOnlyWithinSelectedType(text);
-        }
-        else if (HierarchiesFilteredSelectionToggle.isOn)
-        {
-            SearchHierarchiesFilteredBySelection(text);
-        }
-        else if(DependenciesFilteredSelectionToggle.isOn)
-        {
-            SearchDependenciesFilteredBySelection(text);
-        }
-        else
-        {
-            StandardSearch(text);
-        }
-        
-    }
-
-    public void StandardSearch(string text)
-    {
-        foreach (GraphReader graph in sbomList)
-        {
-            if (text != null && text != "")
-            {
-                foreach (DataObject obj in graph.dataObjects)
-                {
-                    if (!obj.key.Contains(text) && !obj.value.Contains(text))
-                    {
-                        ChangeNodeAndLinesTransparency(obj, 0.2f, 0.1f, 0.3f);
-
-                    }
-                    else
-                    {
-                        ChangeNodeAndLinesTransparency(obj, 1f, 0.9f, 1f);
-                    }
-                }
-            }
-            else
-            {
-                foreach (DataObject obj in graph.dataObjects)
-                {
-                    ChangeNodeAndLinesTransparency(obj, 1f, 0.9f, 1f);
-                }
-            }
-        }
     }
 
     public void ChangeNodeAndLinesTransparency(DataObject obj, float valueBall, float valueLines, float valueText) 
@@ -879,7 +817,7 @@ public class MenuInteraction : MonoBehaviour
         for (int i = 0; i < list.Count; i++)
         {
             //Graph
-            float radius = GetGraphRadiusX(list[i].BoundaryBox);
+            //float radius = GetGraphRadiusX(list[i].BoundaryBox);
 
             Vector3 move = new Vector3(multiplier * maxRadius + (multiplier * 12), 0, edge.z);
             list[i].AdjustEntireGraphPosition(move - list[i].offset);
@@ -1010,7 +948,7 @@ public class MenuInteraction : MonoBehaviour
                     }
                     else
                     {
-                        MakeAllNodesVisible();
+                        MakeAllNodesInGraphInvisible(graph);
                         MakeOtherNodesTransparentWithString(textui.text, graph);
                         previousSelectedType = textui.text;
                         previousGraph = graph;
@@ -1020,7 +958,7 @@ public class MenuInteraction : MonoBehaviour
                         //SearchOnlyWithinSelectedType("array"); //Search Only In Selected Type
                         //SearchDependenciesFilteredBySelection("externalReferences-1"); //Search in all connected neighbours
                         //SearchHierarchiesFilteredBySelection("SHA-512"); //Search complete Hirarchies of nodes
-                        //StandardSearch("DESCRIBES");
+                        //StandardSearch("CVE");
                     }
 
                     return;
@@ -1068,10 +1006,33 @@ public class MenuInteraction : MonoBehaviour
     {
         foreach (DataObject other in g.dataObjects)
         {
-            if (key != other.key && key != (other.key.Substring(0, other.key.Length - other.suffix.Length)))
+            if (key == other.key || key == (other.key.Substring(0, other.key.Length - other.suffix.Length)))
             {
-                ChangeNodeAndLinesTransparency(other, 0.2f, 0.1f, 0.3f);
+                ChangeNodeAndLinesTransparency(other, 1f, 0.9f, 1f);
+
+                foreach (DataObject node in g.dataObjects)
+                {
+                    if (other.parent.Contains(node) || node.parent.Contains(other))
+                    {
+                        ld = new LineDrawer(0.04f);
+
+                        foreach (var line in node.relationship_line_parent)
+                        {
+                            LineRenderer lr = line.GetComponent<LineRenderer>();
+
+                            Vector3 startPosition = lr.GetPosition(0);
+                            Vector3 endPosition = lr.GetPosition(lr.positionCount - 1);
+
+                            if ((Vector3.Distance(startPosition, other.DataBall.transform.position) <= 0.0001f) || (Vector3.Distance(endPosition, other.DataBall.transform.position) <= 0.0001f))
+                            {
+                                lr.colorGradient = ld.GetBlueGradientWithTransparency(0.9f);
+                            }
+                        }
+
+                    }
+                }
             }
+
         }
     }
 
@@ -1301,6 +1262,93 @@ public class MenuInteraction : MonoBehaviour
         }
     }
 
+
+
+    public void OpenKeyboard()
+    {
+        NonNativeKeyboard.Instance.InputField = inputSearch;
+        NonNativeKeyboard.Instance.OnTextSubmitted -= HightlightSearchedNode;
+        NonNativeKeyboard.Instance.OnTextSubmitted += HightlightSearchedNode;
+        NonNativeKeyboard.Instance.PresentKeyboard(); //inputSearch.text
+    }
+
+    public void HightlightSearchedNode(object sender, EventArgs e)
+    {
+        string text = inputSearch.text;
+
+
+        if (WithinSelectedTypeToggle.isOn)
+        {
+            SearchOnlyWithinSelectedType(text);
+        }
+        else if (HierarchiesFilteredSelectionToggle.isOn)
+        {
+            SearchHierarchiesFilteredBySelection(text);
+        }
+        else if (DependenciesFilteredSelectionToggle.isOn)
+        {
+            SearchDependenciesFilteredBySelection(text);
+        }
+        else
+        {
+            StandardSearch(text);
+        }
+
+    }
+
+    public void ResetSearch(GraphReader graph)
+    {
+        foreach (DataObject obj in graph.dataObjects)
+        {
+            ChangeNodeAndLinesTransparency(obj, 1f, 0.9f, 1f);
+        }
+
+        inputSearch.text = "";
+        previousGraph = null;
+        previousSelectedType = "";
+    }
+
+    public void ResetSearchAll()
+    {
+        foreach (GraphReader graph in sbomList)
+        {
+            foreach (DataObject obj in graph.dataObjects)
+            {
+                ChangeNodeAndLinesTransparency(obj, 1f, 0.9f, 1f);
+            }
+        }
+
+        inputSearch.text = "";
+        previousGraph = null;
+        previousSelectedType = "";
+    }
+
+    public void StandardSearch(string text)
+    {
+        foreach (GraphReader graph in sbomList)
+        {
+            if (text != null && text != "")
+            {
+                foreach (DataObject obj in graph.dataObjects)
+                {
+                    if (!obj.key.Contains(text) && !obj.value.Contains(text))
+                    {
+                        ChangeNodeAndLinesTransparency(obj, 0.2f, 0.1f, 0.3f);
+
+                    }
+                    else
+                    {
+                        ChangeNodeAndLinesTransparency(obj, 1f, 0.9f, 1f);
+                    }
+                }
+            }
+            else
+            {
+                ResetSearch(graph);
+            }
+        }
+    }
+
     public void SearchOnlyWithinSelectedType(string text)
     {
 
@@ -1328,12 +1376,7 @@ public class MenuInteraction : MonoBehaviour
         }
         else
         {
-            foreach (DataObject obj in previousGraph.dataObjects)
-            {
-                ChangeNodeAndLinesTransparency(obj, 1f, 0.9f, 1f);
-            }
-            previousGraph = null;
-            previousSelectedType = "";
+            ResetSearch(previousGraph);
         }
     }
 
@@ -1355,25 +1398,33 @@ public class MenuInteraction : MonoBehaviour
             }
         }
 
-        foreach (DataObject dobj in previousGraph.dataObjects)
+        if (text != null && text != "")
         {
-            if (dobj.key.Contains(text) || dobj.value.Contains(text))
+            foreach (DataObject dobj in previousGraph.dataObjects)
             {
-                RecursiveSearchConnectionInTree(dobj, dobj, selectedTypeNodes);
-            }
-        }
-
-        foreach(var path in allPaths)
-        {
-            for(int i=0;i<path.Count;i++) {
-
-                if(i+1 < path.Count)
+                if (dobj.key.Contains(text) || dobj.value.Contains(text))
                 {
-                    Debug.Log(path[i].key + " -> " + path[i+1].key);
-                    ChangeOnlyLineTransparency(path[i], path[i + 1], 0.9f);
-                    ChangeOnlyLineTransparency(path[i + 1], path[i], 0.9f);
+                    RecursiveSearchConnectionInTree(dobj, dobj, selectedTypeNodes);
                 }
             }
+
+            foreach (var path in allPaths)
+            {
+                for (int i = 0; i < path.Count; i++)
+                {
+
+                    if (i + 1 < path.Count)
+                    {
+                        Debug.Log(path[i].key + " -> " + path[i + 1].key);
+                        ChangeOnlyLineTransparency(path[i], path[i + 1], 0.9f);
+                        ChangeOnlyLineTransparency(path[i + 1], path[i], 0.9f);
+                    }
+                }
+            }
+        }
+        else
+        {
+            ResetSearch(previousGraph);
         }
     }
 
@@ -1455,12 +1506,8 @@ public class MenuInteraction : MonoBehaviour
         }
         else
         {
-            foreach (DataObject obj in previousGraph.dataObjects)
-            {
-                ChangeNodeAndLinesTransparency(obj, 1f, 0.9f, 1f);
-            }
-            previousGraph = null;
-            previousSelectedType = "";
+            ResetSearch(previousGraph);
         }
     }
+
 }
