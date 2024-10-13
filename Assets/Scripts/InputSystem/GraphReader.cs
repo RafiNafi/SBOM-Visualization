@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Drawing;
 using System.IO;
 using System.Linq;
+using System.Reflection.Emit;
 using System.Security.Policy;
 using TMPro;
 using Unity.VisualScripting;
@@ -47,9 +48,11 @@ public class GraphReader
     public Vector3 graphMax = Vector3.zero;
 
     public bool isCVE = false;
+    public bool isComparisonGraph = false;
     public int lineCounter = 0;
+    public int allCategories = 0;
 
-    public GameObject sbomLabel;
+    public List<GameObject> sbomLabels = new List<GameObject>();
     public GameObject categoryPlane;
 
     public void CreateGraph(string sbomElement, string graphType, bool showDuplicateNodes)
@@ -95,9 +98,13 @@ public class GraphReader
         {
             MonoBehaviour.Destroy(BoundaryBoxCategories);
         }
-        if (sbomLabel != null)
+
+        foreach (var label in sbomLabels)
         {
-            MonoBehaviour.Destroy (sbomLabel);
+            if (label != null)
+            {
+                MonoBehaviour.Destroy(label);
+            }
         }
 
         if (categoryPlane != null)
@@ -861,15 +868,37 @@ public class GraphReader
         //Move category boundary Box pos
         MoveBoundaryBox(BoundaryBoxCategories, position);
 
-        //Set Label Pos
-        sbomLabel.transform.localPosition = new Vector3(BoundaryBox.GetComponent<Renderer>().bounds.min.x + 0.5f,
+
+        //Set Label Pos 1
+        sbomLabels[0].transform.position = new Vector3(BoundaryBox.GetComponent<Renderer>().bounds.min.x + 0.5f,
             BoundaryBox.GetComponent<Renderer>().bounds.min.y, (BoundaryBox.GetComponent<Renderer>().bounds.max.z + BoundaryBox.GetComponent<Renderer>().bounds.min.z) / 2);
 
-        AdjustTextFontSize();
+        AdjustTextFontSize(sbomLabels[0], Mathf.Abs(BoundaryBox.GetComponent<Renderer>().bounds.max.z - BoundaryBox.GetComponent<Renderer>().bounds.min.z));
+
+        
+        //Set Label Pos 2
+        sbomLabels[1].transform.position = new Vector3((BoundaryBox.GetComponent<Renderer>().bounds.max.x + BoundaryBox.GetComponent<Renderer>().bounds.min.x) / 2,
+            BoundaryBox.GetComponent<Renderer>().bounds.min.y, BoundaryBox.GetComponent<Renderer>().bounds.min.z + 0.5f);
+
+        AdjustTextFontSize(sbomLabels[1], Mathf.Abs(BoundaryBox.GetComponent<Renderer>().bounds.max.x - BoundaryBox.GetComponent<Renderer>().bounds.min.x));
+
+
+        //Set Label Pos 3
+        sbomLabels[2].transform.position = new Vector3(BoundaryBox.GetComponent<Renderer>().bounds.max.x - 0.5f,
+            BoundaryBox.GetComponent<Renderer>().bounds.min.y, (BoundaryBox.GetComponent<Renderer>().bounds.max.z + BoundaryBox.GetComponent<Renderer>().bounds.min.z) / 2);
+
+        AdjustTextFontSize(sbomLabels[2], Mathf.Abs(BoundaryBox.GetComponent<Renderer>().bounds.max.z - BoundaryBox.GetComponent<Renderer>().bounds.min.z));
+
+
+        //Set Label Pos 4
+        sbomLabels[3].transform.position = new Vector3((BoundaryBox.GetComponent<Renderer>().bounds.max.x + BoundaryBox.GetComponent<Renderer>().bounds.min.x) / 2,
+            BoundaryBox.GetComponent<Renderer>().bounds.min.y, BoundaryBox.GetComponent<Renderer>().bounds.max.z - 0.5f);
+
+        AdjustTextFontSize(sbomLabels[3], Mathf.Abs(BoundaryBox.GetComponent<Renderer>().bounds.max.x - BoundaryBox.GetComponent<Renderer>().bounds.min.x));
+
 
         //Move Plane
         MovePlanePosition(position);
-
     }
 
     public void MoveBoundaryBox(GameObject box, Vector3 position)
@@ -991,9 +1020,7 @@ public class GraphReader
             } 
         }
 
-        //float sqrt_val = Mathf.Sqrt(colorsLocal.Count);
-        //int rounded_val = Mathf.CeilToInt(sqrt_val);
-
+        allCategories = colorsLocal.Count;
         int columns = (int)Mathf.Sqrt(colorsLocal.Count);
         int rows = Mathf.CeilToInt(colorsLocal.Count / (float)columns);
 
@@ -1012,7 +1039,12 @@ public class GraphReader
         int indexCount = 0;
         int loopCount = 0;
 
-        while(indexCount < colorsLocal.Count)
+        float addX = Mathf.Max((sideX / columns), 1);
+        float addZ = Mathf.Max((sideZ / rows), 1);
+
+        Vector3 start = CalculateCategoryStartPoint();
+
+        while (indexCount < colorsLocal.Count)
         {
             for (int x = 0; x < columns; x++)
             {
@@ -1020,22 +1052,10 @@ public class GraphReader
                 {
                     if(indexCount < colorsLocal.Count)
                     {
-                        float addX = (sideX / columns);
-                        float addZ = (sideZ / rows);
 
-                        if (addX < 1)
-                        {
-                            addX = 1;
-                        }
-                        if (addZ < 1)
-                        {
-                            addZ = 1;
-                        }
-                        //Testing
-                        //Vector3 v = new Vector3(0 - x * addX - 1f, 0 + loopCount - 23, 0 + z * addZ + 1f);
-                        Vector3 v = new Vector3(0 - x * addX - 1f, 0 + loopCount, 0 + z * addZ + 1f);
+                        Vector3 v = new Vector3(start.x - x * Mathf.Min(addX,2), start.y + loopCount, start.z + z * Mathf.Min(addZ, 2));
 
-                        if ((-1 * sideX) > v.x || sideZ < v.z)
+                        if (BoundaryBox.GetComponent<Renderer>().bounds.min.x + 1f > v.x|| BoundaryBox.GetComponent<Renderer>().bounds.max.z - 1f < v.z)
                         {
                             continue;
                         }
@@ -1073,6 +1093,37 @@ public class GraphReader
             BoundaryBoxCategories.GetComponent<Renderer>().bounds.min.y + 0.5f, BoundaryBoxCategories.GetComponent<Renderer>().bounds.max.z - (sideZ)/ 2);
         //plane.GetComponent<MeshRenderer>().enabled = false;
 
+    }
+
+    public Vector3 CalculateCategoryStartPoint()
+    {
+
+        float sideX = Mathf.Abs(BoundaryBox.GetComponent<Renderer>().bounds.max.x - BoundaryBox.GetComponent<Renderer>().bounds.min.x);
+        float sideZ = Mathf.Abs(BoundaryBox.GetComponent<Renderer>().bounds.max.z - BoundaryBox.GetComponent<Renderer>().bounds.min.z);
+
+        int columns = (int)Mathf.Sqrt(allCategories);
+        int rows = Mathf.CeilToInt(allCategories / (float)columns);
+
+        float addX = Mathf.Max((sideX / columns), 1);
+        float addZ = Mathf.Max((sideZ / rows), 1);
+
+
+        while ((Mathf.Min(addZ, 2) * rows) > sideZ)
+        {
+            rows--;
+        }
+        while ((Mathf.Min(addX, 2) * columns) > sideX)
+        {
+            columns--;
+        }
+
+
+        float startZ = BoundaryBox.GetComponent<Renderer>().bounds.min.z + (sideZ - (Mathf.Min(addZ, 2) * rows)) / 2;
+        float startX = BoundaryBox.GetComponent<Renderer>().bounds.max.x - (sideX - (Mathf.Min(addX, 2) * columns)) / 2;
+
+        Vector3 start = new Vector3(startX - 1f, BoundaryBox.GetComponent<Renderer>().bounds.max.y + 1, startZ + 1f);
+
+        return start;
     }
 
     public void MakeCategoryBoundaries(int addedHeight)
@@ -1121,21 +1172,53 @@ public class GraphReader
 
     public void AddSbomLabel()
     {
-        sbomLabel = new GameObject();
+
+        sbomLabels.Add(
+            CreateSbomlabel(new Vector3(
+            BoundaryBox.GetComponent<Renderer>().bounds.min.x + 0.5f,
+            BoundaryBox.GetComponent<Renderer>().bounds.min.y,
+            (BoundaryBox.GetComponent<Renderer>().bounds.max.z + BoundaryBox.GetComponent<Renderer>().bounds.min.z) / 2),
+            Mathf.Abs(BoundaryBox.GetComponent<Renderer>().bounds.max.z - BoundaryBox.GetComponent<Renderer>().bounds.min.z), Quaternion.Euler(0, 90, 0)));
+
+
+        sbomLabels.Add(
+            CreateSbomlabel(new Vector3(
+            (BoundaryBox.GetComponent<Renderer>().bounds.max.x + BoundaryBox.GetComponent<Renderer>().bounds.min.x) / 2,
+            BoundaryBox.GetComponent<Renderer>().bounds.min.y,
+            BoundaryBox.GetComponent<Renderer>().bounds.min.z + 0.5f),
+            Mathf.Abs(BoundaryBox.GetComponent<Renderer>().bounds.max.x - BoundaryBox.GetComponent<Renderer>().bounds.min.x), Quaternion.Euler(0, 0, 0)));
+
+        sbomLabels.Add(
+            CreateSbomlabel(new Vector3(
+            BoundaryBox.GetComponent<Renderer>().bounds.max.x - 0.5f,
+            BoundaryBox.GetComponent<Renderer>().bounds.min.y,
+            (BoundaryBox.GetComponent<Renderer>().bounds.max.z + BoundaryBox.GetComponent<Renderer>().bounds.min.z) / 2),
+            Mathf.Abs(BoundaryBox.GetComponent<Renderer>().bounds.max.z - BoundaryBox.GetComponent<Renderer>().bounds.min.z), Quaternion.Euler(0, -90, 0)));
+
+        sbomLabels.Add(
+            CreateSbomlabel(new Vector3(
+            (BoundaryBox.GetComponent<Renderer>().bounds.max.x + BoundaryBox.GetComponent<Renderer>().bounds.min.x) / 2,
+            BoundaryBox.GetComponent<Renderer>().bounds.min.y,
+            BoundaryBox.GetComponent<Renderer>().bounds.max.z - 0.5f),
+            Mathf.Abs(BoundaryBox.GetComponent<Renderer>().bounds.max.x - BoundaryBox.GetComponent<Renderer>().bounds.min.x), Quaternion.Euler(0, 0, 0)));
+    }
+
+    public GameObject CreateSbomlabel(Vector3 position, float fontSizeValue, Quaternion rotation)
+    {
+        GameObject sbomLabel = new GameObject();
 
         TextMeshPro sbomLabelText = sbomLabel.AddComponent<TextMeshPro>();
-        sbomLabel.transform.localRotation = Quaternion.Euler(0, 90, 0);
-        sbomLabel.transform.localPosition = new Vector3(BoundaryBox.GetComponent<Renderer>().bounds.min.x + 0.5f,
-    BoundaryBox.GetComponent<Renderer>().bounds.min.y, (BoundaryBox.GetComponent<Renderer>().bounds.max.z + BoundaryBox.GetComponent<Renderer>().bounds.min.z) / 2);
+        sbomLabel.transform.localRotation = rotation;
+        sbomLabel.transform.localPosition = position;
 
         ContentSizeFitter contentFitter = sbomLabel.AddComponent<ContentSizeFitter>();
         contentFitter.horizontalFit = ContentSizeFitter.FitMode.PreferredSize;
         contentFitter.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
 
-        if(sbomName != "")
+        if (sbomName != "")
         {
             sbomLabelText.text = sbomName;
-        } 
+        }
         else
         {
             sbomLabelText.text = dbid;
@@ -1145,13 +1228,15 @@ public class GraphReader
         sbomLabelText.alignment = TextAlignmentOptions.Center;
         sbomLabelText.color = new UnityEngine.Color(0.1f, 0.1f, 0.1f, 0.7f);
 
-        AdjustTextFontSize();
+        AdjustTextFontSize(sbomLabel, fontSizeValue);
+
+        return sbomLabel;
     }
 
-    public void AdjustTextFontSize()
+    public void AdjustTextFontSize(GameObject label, float fontSizeValue)
     {
-        TextMeshPro sbomLabelText = sbomLabel.GetComponent<TextMeshPro>();
-        float value = Mathf.Abs(BoundaryBox.GetComponent<Renderer>().bounds.max.z - BoundaryBox.GetComponent<Renderer>().bounds.min.z);
+        TextMeshPro sbomLabelText = label.GetComponent<TextMeshPro>();
+        float value = fontSizeValue;
 
         while (true)
         {
@@ -1182,9 +1267,7 @@ public class GraphReader
             }
         }
 
-        sbomLabel.transform.localPosition += new Vector3(0, (sbomLabelText.fontSize * 0.05f) + 1.5f , 0);
-
-        //sbomLabel.transform.localPosition += new Vector3(0, sbomLabelText.preferredHeight, 0);
+        label.transform.localPosition += new Vector3(0, (sbomLabelText.fontSize * 0.05f) + 1.5f , 0);
 
         Canvas.ForceUpdateCanvases();
     }

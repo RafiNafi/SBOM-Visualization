@@ -18,6 +18,7 @@ public class DataObject
     public int lineNumber = 0;
     public List<DataObject> children = new List<DataObject>();
     public int nr_relationships = 0;
+    public bool modifiedStatus = false;
 
     public DataObject(GameObject ball,int lvl,string key, string value, DataObject p, int lineNumber)
     {

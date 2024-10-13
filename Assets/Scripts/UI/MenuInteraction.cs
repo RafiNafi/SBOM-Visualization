@@ -44,10 +44,13 @@ public class MenuInteraction : MonoBehaviour
     public TMP_Dropdown dropdown;
     public TMP_Dropdown dropdownPositions;
 
+    //Other Options Menu Options
     public UnityEngine.UI.Toggle showCWEToggle;
     public UnityEngine.UI.Toggle showDuplicateNodesToggle;
     public UnityEngine.UI.Toggle changeBallSize;
+    public UnityEngine.UI.Toggle showUnrelevantNodes;
 
+    //Search Menu Options
     public UnityEngine.UI.Toggle WithinSelectedTypeToggle;
     public UnityEngine.UI.Toggle HierarchiesFilteredSelectionToggle;
     public UnityEngine.UI.Toggle DependenciesFilteredSelectionToggle;
@@ -429,6 +432,7 @@ public class MenuInteraction : MonoBehaviour
 
         newGraph.dbid = id1;
         newGraph.sbomName = "";
+        newGraph.isComparisonGraph = true;
 
         Graph1.Initialization();
         Graph1.ReadFileAndCreateObjects(sboms[0]);
@@ -456,6 +460,8 @@ public class MenuInteraction : MonoBehaviour
         newGraph.CreateCategories();
         newGraph.AddSbomLabel();
 
+        ShowUnrelevantNodes();
+
         //Delete both Graphs
         Graph1.Initialization();
         Graph2.Initialization();
@@ -465,19 +471,19 @@ public class MenuInteraction : MonoBehaviour
         PositionAllGraphs(sbomList);
 
         /*
-        Debug.Log("ADDED -----");
+        //Debug.Log("ADDED -----");
         foreach (DataObject d in AddedNodes)
         {
             Debug.Log(d.key + " : " + d.value);
         }
 
-        Debug.Log("DELETED -----");
+        //Debug.Log("DELETED -----");
         foreach (DataObject d in DeletedNodes)
         {
             Debug.Log(d.key + " : " + d.value);
         }
 
-        Debug.Log("MODIFIED -----");
+        //Debug.Log("MODIFIED -----");
         foreach (DataObject d in ModifiedNodes)
         {
             Debug.Log(d.key + " : " + d.value);
@@ -508,6 +514,7 @@ public class MenuInteraction : MonoBehaviour
                     List<GameObject> children = new List<GameObject>();
                     obj.DataBall.GetNamedChild("Ball").GetChildGameObjects(children);
                     children[2].SetActive(true);
+                    obj.modifiedStatus = true;
                     RecursiveCompare(null, newObj, obj, graph1, graph2, newGraph);
                 }
             }
@@ -522,6 +529,7 @@ public class MenuInteraction : MonoBehaviour
                     List<GameObject> children = new List<GameObject>();
                     obj.DataBall.GetNamedChild("Ball").GetChildGameObjects(children);
                     children[1].SetActive(true);
+                    obj.modifiedStatus = true;
                     RecursiveCompare(oldObj, null, obj, graph1, graph2, newGraph);
                 }
             }
@@ -635,6 +643,11 @@ public class MenuInteraction : MonoBehaviour
             foreach (var obj in graph.categoryBalls)
             {
                 Destroy(obj);
+            }
+
+            if(graph.categoryPlane != null)
+            {
+                Destroy(graph.categoryPlane);
             }
 
             graph.categoryBalls.Clear();
@@ -836,9 +849,9 @@ public class MenuInteraction : MonoBehaviour
             }
 
             //Categories
-            Vector3 adjustCategoriesEdge = new Vector3(list[i].BoundaryBox.GetComponent<Renderer>().bounds.max.x, list[i].BoundaryBox.GetComponent<Renderer>().bounds.max.y + 1, list[i].BoundaryBox.GetComponent<Renderer>().bounds.min.z);
-            PositionCategoryBalls(list[i], adjustCategoriesEdge - list[i].offsetCategories);
-            list[i].offsetCategories = adjustCategoriesEdge;
+            //Vector3 adjustCategoriesEdge = list[i].CalculateCategoryStartPoint();
+            PositionCategoryBalls(list[i], list[i].offset - list[i].offsetCategories);
+            list[i].offsetCategories = list[i].offset;
 
             //Ball Text Rotation
             ChangeBallRotation(list[i]);
@@ -1507,6 +1520,39 @@ public class MenuInteraction : MonoBehaviour
         else
         {
             ResetSearch(previousGraph);
+        }
+    }
+
+    public void ShowUnrelevantNodes()
+    {
+        if (showUnrelevantNodes.isOn)
+        {
+            foreach (var sbom in sbomList)
+            {
+                if (sbom.isComparisonGraph)
+                {
+                    foreach(DataObject obj in sbom.dataObjects)
+                    {
+                        if (!obj.modifiedStatus)
+                        {
+                            ChangeNodeAndLinesTransparency(obj, 0.2f, 0.1f, 0.3f);
+                        }
+                    }
+                }
+            }
+        }
+        else
+        {
+            foreach (var sbom in sbomList)
+            {
+                if (sbom.isComparisonGraph)
+                {
+                    foreach (DataObject obj in sbom.dataObjects)
+                    {
+                        ChangeNodeAndLinesTransparency(obj, 1f, 0.9f, 1f);
+                    }
+                }
+            }
         }
     }
 
