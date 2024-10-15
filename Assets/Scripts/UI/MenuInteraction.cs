@@ -22,6 +22,7 @@ using static UnityEditor.Experimental.AssetDatabaseExperimental.AssetDatabaseCou
 using UnityEngine.XR.Interaction.Toolkit;
 using UnityEngine.InputSystem;
 using static System.Net.Mime.MediaTypeNames;
+using UnityEngine.Rendering.Universal;
 public class MenuInteraction : MonoBehaviour
 {
 
@@ -29,8 +30,11 @@ public class MenuInteraction : MonoBehaviour
 
     public LineDrawer ld;
 
+    public GameObject player;
+
     public GameObject scrollViewContent;
     public GameObject scrollViewContentPositions;
+    public GameObject scrollViewContentSearch;
     public GameObject buttonTemplate;
 
     public UnityEngine.UI.Slider sliderLevel;
@@ -49,6 +53,7 @@ public class MenuInteraction : MonoBehaviour
     public UnityEngine.UI.Toggle showDuplicateNodesToggle;
     public UnityEngine.UI.Toggle changeBallSize;
     public UnityEngine.UI.Toggle showUnrelevantNodes;
+    public UnityEngine.UI.Toggle enableLayerColors;
 
     //Search Menu Options
     public UnityEngine.UI.Toggle WithinSelectedTypeToggle;
@@ -63,6 +68,7 @@ public class MenuInteraction : MonoBehaviour
     public GameObject camSphere;
 
     public Dictionary<string, string> textsPosition = new Dictionary<string, string>();
+    public Dictionary<GameObject, DataObject> searchBtnDataPair = new Dictionary<GameObject, DataObject>();
 
     public GameObject mainMenu;
     public GameObject sbomMenu;
@@ -79,6 +85,8 @@ public class MenuInteraction : MonoBehaviour
     public GraphReader previousGraph;
 
     public List<string> expandedNodes = new List<string>();
+
+    public GameObject searchResultsMenu;
 
     // Start is called before the first frame update
     void Start()
@@ -409,6 +417,7 @@ public class MenuInteraction : MonoBehaviour
         sbomList.Add(newGraph);
         InitSliders();
         PositionAllGraphs(sbomList);
+        CheckForStackingRadialTree();
 
         //SHOW CVE
         if (showCWEToggle.isOn)
@@ -469,6 +478,8 @@ public class MenuInteraction : MonoBehaviour
         sbomList.Add(newGraph);
         InitSliders();
         PositionAllGraphs(sbomList);
+
+        CheckForStackingRadialTree();
 
         /*
         //Debug.Log("ADDED -----");
@@ -664,12 +675,24 @@ public class MenuInteraction : MonoBehaviour
         {
             ReselectCVE();
         }
+
+        CheckForStackingRadialTree();
     }
 
     [System.Serializable]
     public class StringListWrapper
     {
         public List<string> strings;
+    }
+
+    public void CheckForStackingRadialTree()
+    {
+        //Enable automatically for Stacking Radial Tree
+        if (dropdown.options[dropdown.value].text == "Stacking Radial Tree")
+        {
+            enableLayerColors.isOn = true;
+            EnableLayerGlow();
+        }
     }
 
     public void ShowCVENodes()
@@ -1056,6 +1079,23 @@ public class MenuInteraction : MonoBehaviour
         activateWindow = false;
     }
 
+    public void CloseSearchWindow()
+    {
+        ClearContentChildren();
+
+        searchResultsMenu.SetActive(false);
+    }
+
+    public void ClearContentChildren()
+    {
+
+        foreach (Transform child in scrollViewContentSearch.GetComponent<RectTransform>())
+        {
+            Destroy(child.gameObject);
+        }
+        searchBtnDataPair.Clear();
+    }
+
     public void MakeAllNodesVisible()
     {
         foreach (GraphReader graph in sbomList)
@@ -1289,6 +1329,9 @@ public class MenuInteraction : MonoBehaviour
     {
         string text = inputSearch.text;
 
+        searchResultsMenu.SetActive(true);
+        ClearContentChildren();
+
 
         if (WithinSelectedTypeToggle.isOn)
         {
@@ -1309,6 +1352,43 @@ public class MenuInteraction : MonoBehaviour
 
     }
 
+    public void AddNodeToScrollView(DataObject dobj)
+    {
+        GameObject btn = Instantiate(buttonTemplate, scrollViewContentSearch.transform);
+
+        TextMeshProUGUI text = btn.GetComponentInChildren<TextMeshProUGUI>();
+
+        text.enableAutoSizing = true;
+        text.fontSizeMax = 7;
+        text.fontSizeMin = 4;
+
+        if(dobj.value != "")
+        {
+            text.text = "<color=#D52929>" + dobj.key + " </color>: " + dobj.value;
+        }
+        else
+        {
+            text.text = "<color=#D52929>" + dobj.key + " </color>";
+        }
+
+        text.fontSize = 7;
+        text.margin = new Vector4(5, 0, 5, 0);
+
+        searchBtnDataPair.Add(btn, dobj);
+
+        btn.GetComponent<UnityEngine.UI.Button>().onClick.AddListener(() => {
+
+            TextMeshPro textmesh = searchBtnDataPair[btn].DataBall.GetNamedChild("Ball").GetNamedChild("Text").GetComponent<TextMeshPro>();
+
+            Vector3 directionFromText = (textmesh.transform.position - searchBtnDataPair[btn].DataBall.transform.position).normalized;
+            Vector3 playerPosition = textmesh.transform.position + directionFromText * 2f;
+
+            player.GetComponent<Transform>().transform.position = playerPosition;
+            player.GetComponent<Transform>().transform.LookAt(textmesh.transform);
+
+        });
+    }
+
     public void ResetSearch(GraphReader graph)
     {
         foreach (DataObject obj in graph.dataObjects)
@@ -1319,6 +1399,8 @@ public class MenuInteraction : MonoBehaviour
         inputSearch.text = "";
         previousGraph = null;
         previousSelectedType = "";
+
+        ClearContentChildren();
     }
 
     public void ResetSearchAll()
@@ -1334,6 +1416,8 @@ public class MenuInteraction : MonoBehaviour
         inputSearch.text = "";
         previousGraph = null;
         previousSelectedType = "";
+
+        ClearContentChildren();
     }
 
     public void StandardSearch(string text)
@@ -1347,10 +1431,10 @@ public class MenuInteraction : MonoBehaviour
                     if (!obj.key.Contains(text) && !obj.value.Contains(text))
                     {
                         ChangeNodeAndLinesTransparency(obj, 0.2f, 0.1f, 0.3f);
-
                     }
                     else
                     {
+                        AddNodeToScrollView(obj);
                         ChangeNodeAndLinesTransparency(obj, 1f, 0.9f, 1f);
                     }
                 }
@@ -1555,5 +1639,28 @@ public class MenuInteraction : MonoBehaviour
             }
         }
     }
+
+    public void EnableLayerGlow()
+    {
+        foreach(var sbom in sbomList)
+        {
+            foreach(DataObject node in sbom.dataObjects)
+            {
+                List<GameObject> children = new List<GameObject>();
+                node.DataBall.GetNamedChild("Ball").GetChildGameObjects(children);
+
+                if (enableLayerColors.isOn)
+                {
+                    children[3].SetActive(true);
+                }
+                else
+                {
+                    children[3].SetActive(false);
+                }
+
+            }
+        }
+    }
+
 
 }

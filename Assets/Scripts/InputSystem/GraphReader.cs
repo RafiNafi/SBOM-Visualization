@@ -54,6 +54,8 @@ public class GraphReader
 
     public List<GameObject> sbomLabels = new List<GameObject>();
     public GameObject categoryPlane;
+    public GameObject numberSbomLabel;
+    public GameObject numberCategoriesLabel;
 
     public void CreateGraph(string sbomElement, string graphType, bool showDuplicateNodes)
     {
@@ -111,6 +113,17 @@ public class GraphReader
         {
             MonoBehaviour.Destroy(categoryPlane);
         }
+
+        if (numberSbomLabel != null)
+        {
+            MonoBehaviour.Destroy(numberSbomLabel);
+        }
+
+        if (numberCategoriesLabel != null)
+        {
+            MonoBehaviour.Destroy(numberCategoriesLabel);
+        }
+        
 
         dataObjects.Clear();
         level_occurrences.Clear();
@@ -376,7 +389,6 @@ public class GraphReader
                 break;
 
             case "Stacking Radial Tree":
-                //PositionAsStackingRadialTidyTree();
                 PositionAsStackingRadialTidyTreeNoOverlap();
                 break;
 
@@ -649,14 +661,6 @@ public class GraphReader
                     //TODO: Fix missing positions (maybe numberClaimedPositions too high)
                     float ballsFraction = (float)dobj.nr_children / ((float)(numberOfChildrenBalls));
                     int numberClaimedPositions = (int)(ballsFraction * (numberPositions - numberOfBalls));
-                     
-
-                    /*
-                    Debug.Log(dobj.key);
-                    Debug.Log("POSITIONS:" + numberPositions);
-                    Debug.Log(numberClaimedPositions);
-                    Debug.Log("LAYER:" + key);
-                    */
 
                     if (numberClaimedPositions == 0)
                     {
@@ -664,6 +668,8 @@ public class GraphReader
                     }
                     /*
                     Debug.Log(dobj.key);
+                    Debug.Log("POSITIONS:" + numberPositions);
+                    Debug.Log("LAYER:" + key);
                     Debug.Log("Fraction: " + ballsFraction);
                     Debug.Log("numberPositions - NodesWithoutChild: " + (numberPositions - NodesWithoutChild));
                     Debug.Log("numberClaimedPositions: " + numberClaimedPositions);
@@ -897,6 +903,18 @@ public class GraphReader
         AdjustTextFontSize(sbomLabels[3], Mathf.Abs(BoundaryBox.GetComponent<Renderer>().bounds.max.x - BoundaryBox.GetComponent<Renderer>().bounds.min.x));
 
 
+
+        //Set Number sbom and category labels 
+        numberSbomLabel.transform.position = new Vector3(BoundaryBox.GetComponent<Renderer>().bounds.min.x + 0.5f,
+            BoundaryBox.GetComponent<Renderer>().bounds.max.y - 1.1f, BoundaryBox.GetComponent<Renderer>().bounds.max.z);
+
+        AdjustNumberTextFontSize(numberSbomLabel, Math.Max(6, Math.Min(14, sbomLabels[0].GetComponent<TextMeshPro>().fontSize / 2)));
+
+        numberCategoriesLabel.transform.position = new Vector3(BoundaryBoxCategories.GetComponent<Renderer>().bounds.min.x + 0.5f,
+            BoundaryBoxCategories.GetComponent<Renderer>().bounds.min.y + 1.1f, BoundaryBoxCategories.GetComponent<Renderer>().bounds.max.z);
+
+        AdjustNumberTextFontSize(numberCategoriesLabel, Math.Max(6, Math.Min(14, sbomLabels[0].GetComponent<TextMeshPro>().fontSize / 2)));
+
         //Move Plane
         MovePlanePosition(position);
     }
@@ -1082,9 +1100,10 @@ public class GraphReader
             loopCount++;
         }
 
+
         MakeCategoryBoundaries(loopCount);
 
-
+      
         //Make Floor to walk for category inspection
         GameObject prefab = Resources.Load<GameObject>("PlaneFloor");
         categoryPlane = MonoBehaviour.Instantiate(prefab, Vector3.zero, Quaternion.identity);
@@ -1092,7 +1111,7 @@ public class GraphReader
         categoryPlane.transform.position = new Vector3(BoundaryBoxCategories.GetComponent<Renderer>().bounds.max.x - (sideX/2),
             BoundaryBoxCategories.GetComponent<Renderer>().bounds.min.y + 0.5f, BoundaryBoxCategories.GetComponent<Renderer>().bounds.max.z - (sideZ)/ 2);
         //plane.GetComponent<MeshRenderer>().enabled = false;
-
+       
     }
 
     public Vector3 CalculateCategoryStartPoint()
@@ -1172,13 +1191,24 @@ public class GraphReader
 
     public void AddSbomLabel()
     {
+        string nameText = "";
 
+        if (sbomName != "")
+        {
+            nameText = sbomName;
+        }
+        else
+        {
+            nameText = dbid;
+        }
+
+        //Name labels
         sbomLabels.Add(
             CreateSbomlabel(new Vector3(
             BoundaryBox.GetComponent<Renderer>().bounds.min.x + 0.5f,
             BoundaryBox.GetComponent<Renderer>().bounds.min.y,
             (BoundaryBox.GetComponent<Renderer>().bounds.max.z + BoundaryBox.GetComponent<Renderer>().bounds.min.z) / 2),
-            Mathf.Abs(BoundaryBox.GetComponent<Renderer>().bounds.max.z - BoundaryBox.GetComponent<Renderer>().bounds.min.z), Quaternion.Euler(0, 90, 0)));
+            Mathf.Abs(BoundaryBox.GetComponent<Renderer>().bounds.max.z - BoundaryBox.GetComponent<Renderer>().bounds.min.z), Quaternion.Euler(0, 90, 0), nameText));
 
 
         sbomLabels.Add(
@@ -1186,24 +1216,36 @@ public class GraphReader
             (BoundaryBox.GetComponent<Renderer>().bounds.max.x + BoundaryBox.GetComponent<Renderer>().bounds.min.x) / 2,
             BoundaryBox.GetComponent<Renderer>().bounds.min.y,
             BoundaryBox.GetComponent<Renderer>().bounds.min.z + 0.5f),
-            Mathf.Abs(BoundaryBox.GetComponent<Renderer>().bounds.max.x - BoundaryBox.GetComponent<Renderer>().bounds.min.x), Quaternion.Euler(0, 0, 0)));
+            Mathf.Abs(BoundaryBox.GetComponent<Renderer>().bounds.max.x - BoundaryBox.GetComponent<Renderer>().bounds.min.x), Quaternion.Euler(0, 0, 0), nameText));
 
         sbomLabels.Add(
             CreateSbomlabel(new Vector3(
             BoundaryBox.GetComponent<Renderer>().bounds.max.x - 0.5f,
             BoundaryBox.GetComponent<Renderer>().bounds.min.y,
             (BoundaryBox.GetComponent<Renderer>().bounds.max.z + BoundaryBox.GetComponent<Renderer>().bounds.min.z) / 2),
-            Mathf.Abs(BoundaryBox.GetComponent<Renderer>().bounds.max.z - BoundaryBox.GetComponent<Renderer>().bounds.min.z), Quaternion.Euler(0, -90, 0)));
+            Mathf.Abs(BoundaryBox.GetComponent<Renderer>().bounds.max.z - BoundaryBox.GetComponent<Renderer>().bounds.min.z), Quaternion.Euler(0, -90, 0), nameText));
 
         sbomLabels.Add(
             CreateSbomlabel(new Vector3(
             (BoundaryBox.GetComponent<Renderer>().bounds.max.x + BoundaryBox.GetComponent<Renderer>().bounds.min.x) / 2,
             BoundaryBox.GetComponent<Renderer>().bounds.min.y,
             BoundaryBox.GetComponent<Renderer>().bounds.max.z - 0.5f),
-            Mathf.Abs(BoundaryBox.GetComponent<Renderer>().bounds.max.x - BoundaryBox.GetComponent<Renderer>().bounds.min.x), Quaternion.Euler(0, 0, 0)));
+            Mathf.Abs(BoundaryBox.GetComponent<Renderer>().bounds.max.x - BoundaryBox.GetComponent<Renderer>().bounds.min.x), Quaternion.Euler(0, 0, 0), nameText));
+
+        
+        //Number labels
+        numberSbomLabel = CreateNumberLabel(new Vector3(
+        BoundaryBox.GetComponent<Renderer>().bounds.min.x + 0.5f,
+        BoundaryBox.GetComponent<Renderer>().bounds.max.y - 1.1f,
+        BoundaryBox.GetComponent<Renderer>().bounds.max.z), Quaternion.Euler(0, 90, 0), "Nodes: " + dataObjects.Count);
+
+        numberCategoriesLabel = CreateNumberLabel(new Vector3(
+        BoundaryBoxCategories.GetComponent<Renderer>().bounds.min.x + 0.5f,
+        BoundaryBoxCategories.GetComponent<Renderer>().bounds.min.y + 1.1f,
+        BoundaryBoxCategories.GetComponent<Renderer>().bounds.max.z), Quaternion.Euler(0, 90, 0), "Nodes: " + allCategories);
     }
 
-    public GameObject CreateSbomlabel(Vector3 position, float fontSizeValue, Quaternion rotation)
+    public GameObject CreateSbomlabel(Vector3 position, float fontSizeValue, Quaternion rotation, string name)
     {
         GameObject sbomLabel = new GameObject();
 
@@ -1215,14 +1257,7 @@ public class GraphReader
         contentFitter.horizontalFit = ContentSizeFitter.FitMode.PreferredSize;
         contentFitter.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
 
-        if (sbomName != "")
-        {
-            sbomLabelText.text = sbomName;
-        }
-        else
-        {
-            sbomLabelText.text = dbid;
-        }
+        sbomLabelText.text = name;
 
         sbomLabelText.fontSize = 8;
         sbomLabelText.alignment = TextAlignmentOptions.Center;
@@ -1231,6 +1266,34 @@ public class GraphReader
         AdjustTextFontSize(sbomLabel, fontSizeValue);
 
         return sbomLabel;
+    }
+
+    public GameObject CreateNumberLabel(Vector3 position, Quaternion rotation, string name)
+    {
+        GameObject sbomLabel = new GameObject();
+
+        TextMeshPro sbomLabelText = sbomLabel.AddComponent<TextMeshPro>();
+        sbomLabel.transform.localRotation = rotation;
+        sbomLabel.transform.localPosition = position;
+
+        sbomLabelText.text = name;
+        AdjustNumberTextFontSize(sbomLabel, Math.Max(6, Math.Min(14, sbomLabels[0].GetComponent<TextMeshPro>().fontSize / 2)));
+        sbomLabelText.alignment = TextAlignmentOptions.Center;
+        sbomLabelText.color = new UnityEngine.Color(0.1f, 0.1f, 0.1f, 0.7f);
+
+        Debug.Log(" Object position:" + sbomLabel.transform.localPosition);
+
+        sbomLabel.transform.localPosition += new Vector3(0,0, -sbomLabelText.preferredWidth / 2 - 1);
+
+        return sbomLabel;
+    }
+
+    public void AdjustNumberTextFontSize(GameObject label, float fontsize)
+    {
+        TextMeshPro sbomLabelText = label.GetComponent<TextMeshPro>();
+        sbomLabelText.fontSize = fontsize;
+
+        label.transform.localPosition += new Vector3(0, 0, -sbomLabelText.preferredWidth / 2 - 1);
     }
 
     public void AdjustTextFontSize(GameObject label, float fontSizeValue)
@@ -1272,6 +1335,8 @@ public class GraphReader
         Canvas.ForceUpdateCanvases();
     }
 
+
+
     public void CountRelationshipsAndDetermineMax()
     {
 
@@ -1309,4 +1374,5 @@ public class GraphReader
 
         return relations + obj.parent.Count;
     }
+
 }
