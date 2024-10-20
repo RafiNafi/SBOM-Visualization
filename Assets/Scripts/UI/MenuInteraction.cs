@@ -16,13 +16,8 @@ using Unity.XR.CoreUtils;
 using System.Linq;
 using System.Xml;
 using UnityEngine.Windows;
-using static Unity.VisualScripting.Metadata;
-using UnityEngine.XR.OpenXR.Input;
-using static UnityEditor.Experimental.AssetDatabaseExperimental.AssetDatabaseCounters;
-using UnityEngine.XR.Interaction.Toolkit;
-using UnityEngine.InputSystem;
-using static System.Net.Mime.MediaTypeNames;
-using UnityEngine.Rendering.Universal;
+using System.IO;
+
 public class MenuInteraction : MonoBehaviour
 {
 
@@ -31,6 +26,8 @@ public class MenuInteraction : MonoBehaviour
     public LineDrawer ld;
 
     public GameObject player;
+    public GameObject setup;
+    public Camera cam;
 
     public GameObject scrollViewContent;
     public GameObject scrollViewContentPositions;
@@ -96,9 +93,43 @@ public class MenuInteraction : MonoBehaviour
         InitOptions();
     }
 
+    private float timer = 0f; 
+    public float interval = 1f;
+
     // Update is called once per frame
     void Update()
     {
+        timer += Time.deltaTime;
+
+        if (timer >= interval)
+        {
+            CheckTextMeshVicinity(); 
+            timer = 0f; 
+        }
+        
+    }
+
+    public void CheckTextMeshVicinity()
+    {
+        foreach (var sbom in sbomList)
+        {
+            foreach (var dobj in sbom.dataObjects)
+            {
+                List<GameObject> list = new List<GameObject>();
+                dobj.DataBall.GetNamedChild("Ball").GetChildGameObjects(list);
+                float distance = Vector3.Distance(list[0].transform.position, camSphere.transform.position);
+
+                if (distance > 50)
+                {
+                    list[0].SetActive(false);
+                }
+                else
+                {
+
+                    list[0].SetActive(true);
+                }
+            }
+        }
     }
 
     public void InitOptions()
@@ -141,9 +172,11 @@ public class MenuInteraction : MonoBehaviour
 
     public void ChangeTextSize(float size, DataObject obj)
     {
-        TextMeshPro text = obj.DataBall.GetComponentInChildren<TextMeshPro>();
+        List<GameObject> children = new List<GameObject>();
+        obj.DataBall.GetNamedChild("Ball").GetChildGameObjects(children);
+        TextMeshPro text = children[0].GetComponent<TextMeshPro>();
 
-        if(obj.value != "")
+        if (obj.value != "")
         {
             if ((int)size * 10 >= obj.value.Length)
             {
@@ -600,7 +633,10 @@ public class MenuInteraction : MonoBehaviour
             line.GetComponent<LineRenderer>().colorGradient = ld.GetBlueGradientWithTransparency(valueLines);
         }
 
-        TextMeshPro t = obj.DataBall.GetNamedChild("Ball").GetNamedChild("Text").GetComponent<TextMeshPro>();
+        List<GameObject> list = new List<GameObject>();
+        obj.DataBall.GetNamedChild("Ball").GetChildGameObjects(list);
+
+        TextMeshPro t = list[0].GetComponent<TextMeshPro>();
 
         UnityEngine.Color currentColor = t.color;
         currentColor.a = valueText;
@@ -615,7 +651,10 @@ public class MenuInteraction : MonoBehaviour
 
         obj.DataBall.GetComponentInChildren<Renderer>().material.color = c;
 
-        TextMeshPro t = obj.DataBall.GetNamedChild("Ball").GetNamedChild("Text").GetComponent<TextMeshPro>();
+        List<GameObject> list = new List<GameObject>();
+        obj.DataBall.GetNamedChild("Ball").GetChildGameObjects(list);
+
+        TextMeshPro t = list[0].GetComponent<TextMeshPro>();
 
         UnityEngine.Color currentColor = t.color;
         currentColor.a = valueText;
@@ -642,7 +681,7 @@ public class MenuInteraction : MonoBehaviour
 
     public void ChangeGraphStyle()
     {
-        Debug.Log(dropdown.options[dropdown.value].text);
+        //Debug.Log(dropdown.options[dropdown.value].text);
 
         foreach (GraphReader graph in sbomList)
         {
@@ -922,7 +961,7 @@ public class MenuInteraction : MonoBehaviour
                 maxRadius = radius; 
             }
         
-            Debug.Log(maxRadius);
+            //Debug.Log(maxRadius);
         }
 
         return maxRadius;
@@ -942,7 +981,7 @@ public class MenuInteraction : MonoBehaviour
             {
                 if (ball == dobj.DataBall.GetNamedChild("Ball"))
                 {
-                    Debug.Log(dobj.key + " : " + dobj.value);
+                    //Debug.Log(dobj.key + " : " + dobj.value);
 
                     MakeAllNodesVisible();
                     MakeOtherNodesTransparent(dobj, graph);
@@ -972,7 +1011,7 @@ public class MenuInteraction : MonoBehaviour
                     List<GameObject> children = new List<GameObject>();
                     ball.GetChildGameObjects(children);
 
-                    Debug.Log(children[0]);
+                    //Debug.Log(children[0]);
 
                     TextMeshPro textui = children[0].GetComponent<TextMeshPro>();
 
@@ -993,7 +1032,7 @@ public class MenuInteraction : MonoBehaviour
                         //TESTS ONLY
                         //SearchOnlyWithinSelectedType("array"); //Search Only In Selected Type
                         //SearchDependenciesFilteredBySelection("externalReferences-1"); //Search in all connected neighbours
-                        //SearchHierarchiesFilteredBySelection("SHA-512"); //Search complete Hirarchies of nodes
+                        //SearchHierarchiesFilteredBySelection("Apache"); //Search complete Hirarchies of nodes
                         //StandardSearch("CVE");
                     }
 
@@ -1082,7 +1121,6 @@ public class MenuInteraction : MonoBehaviour
     public void CloseSearchWindow()
     {
         ClearContentChildren();
-
         searchResultsMenu.SetActive(false);
     }
 
@@ -1233,7 +1271,7 @@ public class MenuInteraction : MonoBehaviour
                     }
                     if (countTabs == 0) countTabs++;
 
-                    Debug.Log(other.key);
+                    //Debug.Log(other.key);
 
                     foreach (DataObject child in graph.dataObjects)
                     {
@@ -1245,7 +1283,7 @@ public class MenuInteraction : MonoBehaviour
 
                     string search = "<link=\"" + other.GetHashCode() + "\"><b>" + "{...}" + "</b></link>" + "\n";
                     int index = displayText.IndexOf(search);
-                    Debug.Log(index);
+                    //Debug.Log(index);
 
                     displayText = displayText.Substring(0, search.Length + index) + addedDisplayText + displayText.Substring(search.Length + index);
 
@@ -1378,13 +1416,16 @@ public class MenuInteraction : MonoBehaviour
 
         btn.GetComponent<UnityEngine.UI.Button>().onClick.AddListener(() => {
 
-            TextMeshPro textmesh = searchBtnDataPair[btn].DataBall.GetNamedChild("Ball").GetNamedChild("Text").GetComponent<TextMeshPro>();
+            List<GameObject> list = new List<GameObject>();
+            searchBtnDataPair[btn].DataBall.GetNamedChild("Ball").GetChildGameObjects(list);
 
-            Vector3 directionFromText = (textmesh.transform.position - searchBtnDataPair[btn].DataBall.transform.position).normalized;
-            Vector3 playerPosition = textmesh.transform.position + directionFromText * 2f;
+            TextMeshPro textmesh = list[0].GetComponent<TextMeshPro>();
 
-            player.GetComponent<Transform>().transform.position = playerPosition;
-            player.GetComponent<Transform>().transform.LookAt(textmesh.transform);
+            player.transform.position = searchBtnDataPair[btn].DataBall.GetNamedChild("Ball").transform.position - 2 * textmesh.transform.forward;
+            player.transform.LookAt(searchBtnDataPair[btn].DataBall.transform);
+            //Debug.Log(searchBtnDataPair[btn].DataBall.transform.eulerAngles.y);
+            //player.transform.eulerAngles = new Vector3(player.transform.eulerAngles.x, searchBtnDataPair[btn].DataBall.transform.eulerAngles.y, player.transform.eulerAngles.z);
+
 
         });
     }
@@ -1417,7 +1458,7 @@ public class MenuInteraction : MonoBehaviour
         previousGraph = null;
         previousSelectedType = "";
 
-        ClearContentChildren();
+        CloseSearchWindow();
     }
 
     public void StandardSearch(string text)
@@ -1467,6 +1508,7 @@ public class MenuInteraction : MonoBehaviour
             {
                 if (dobj.key.Contains(text) || dobj.value.Contains(text))
                 {
+                    AddNodeToScrollView(dobj);
                     ChangeOnlyNodeTransparency(dobj, 1f, 1f);
                 }
             }
@@ -1481,9 +1523,6 @@ public class MenuInteraction : MonoBehaviour
     public void SearchHierarchiesFilteredBySelection(string text)
     {
         MakeAllNodesInGraphInvisible(previousGraph);
-
-        currentPath = new List<DataObject>();
-        allPaths = new List<List<DataObject>>();
 
         List<DataObject> selectedTypeNodes = new List<DataObject>();
 
@@ -1505,19 +1544,27 @@ public class MenuInteraction : MonoBehaviour
                 }
             }
 
-            foreach (var path in allPaths)
-            {
-                for (int i = 0; i < path.Count; i++)
-                {
 
+            List<List<DataObject>> shortestPath = new List<List<DataObject>>();
+
+            foreach (var path in foundPaths)
+            {
+                shortestPath.Add(FindShortestPath(path.Item1,path.Item2));
+            }
+
+            foreach(var path in shortestPath)
+            {
+                for (int i = 0; i < shortestPath.Count; i++)
+                {
                     if (i + 1 < path.Count)
                     {
-                        Debug.Log(path[i].key + " -> " + path[i + 1].key);
                         ChangeOnlyLineTransparency(path[i], path[i + 1], 0.9f);
                         ChangeOnlyLineTransparency(path[i + 1], path[i], 0.9f);
                     }
+
                 }
             }
+
         }
         else
         {
@@ -1525,12 +1572,37 @@ public class MenuInteraction : MonoBehaviour
         }
     }
 
-    List<DataObject> currentPath = new List<DataObject>();    
-    List<List<DataObject>> allPaths = new List<List<DataObject>>(); 
+    public static List<DataObject> FindShortestPath(DataObject startNode, DataObject endNode)
+    {
+        Queue<Tuple<DataObject, List<DataObject>>> queue = new Queue<Tuple<DataObject, List<DataObject>>>();
+        queue.Enqueue(new Tuple<DataObject, List<DataObject>>(startNode, new List<DataObject> { startNode }));
+
+        HashSet<DataObject> visited = new HashSet<DataObject> { startNode };
+
+        while (queue.Count > 0)
+        {
+            var (currentNode, path) = queue.Dequeue();
+
+            if (currentNode == endNode)
+                return path;
+
+            foreach (var neighbor in currentNode.parent)
+            {
+                if (!visited.Contains(neighbor))
+                {
+                    visited.Add(neighbor);
+                    var newPath = new List<DataObject>(path) { neighbor };
+                    queue.Enqueue(new Tuple<DataObject, List<DataObject>>(neighbor, newPath));
+                }
+            }
+        }
+        return null;
+    }
+
+    List<(DataObject, DataObject)> foundPaths = new List<(DataObject, DataObject)>();    
 
     public void RecursiveSearchConnectionInTree(DataObject startNode, DataObject node, List<DataObject>  selectedTypeNodes)
     {
-        currentPath.Add(node);
 
         if (node == null || node.parent.Count <= 0)
         {
@@ -1544,12 +1616,8 @@ public class MenuInteraction : MonoBehaviour
                 ChangeOnlyNodeTransparency(startNode, 1f, 1f);
                 ChangeOnlyNodeTransparency(parent, 1f, 1f);
 
-                allPaths.Add(new List<DataObject>(currentPath));
-
-                currentPath = new List<DataObject>
-                {
-                    node
-                };
+                foundPaths.Add((startNode, parent));
+                AddNodeToScrollView(startNode);
 
                 RecursiveSearchConnectionInTree(startNode, parent, selectedTypeNodes);
             }
@@ -1558,11 +1626,6 @@ public class MenuInteraction : MonoBehaviour
                 RecursiveSearchConnectionInTree(startNode, parent, selectedTypeNodes);
             }
 
-        }
-
-        if(currentPath.Count > 0)
-        {
-            currentPath.RemoveAt(currentPath.Count - 1);
         }
     }
 
@@ -1596,6 +1659,7 @@ public class MenuInteraction : MonoBehaviour
                             ChangeOnlyNodeTransparency(dobj, 1f, 1f);
                             ChangeOnlyLineTransparency(obj, dobj, 0.9f);
                             ChangeOnlyLineTransparency(dobj, obj, 0.9f);
+                            AddNodeToScrollView(obj);
                         }
                     }
                 }

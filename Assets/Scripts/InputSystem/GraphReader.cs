@@ -11,17 +11,12 @@ using System.Reflection.Emit;
 using System.Security.Policy;
 using TMPro;
 using Unity.VisualScripting;
-using UnityEditor.Experimental.GraphView;
+using Unity.XR.CoreUtils;
 using UnityEngine;
 using UnityEngine.InputSystem;
-using UnityEngine.Rendering.Universal;
-using UnityEngine.SocialPlatforms;
 using UnityEngine.UI;
 using UnityEngine.UIElements;
 using UnityEngine.XR.Interaction.Toolkit;
-using static System.Net.Mime.MediaTypeNames;
-using static UnityEditor.ShaderGraph.Internal.KeywordDependentCollection;
-using static UnityEngine.Rendering.DebugUI;
 
 
 public class GraphReader
@@ -57,6 +52,8 @@ public class GraphReader
     public GameObject numberSbomLabel;
     public GameObject numberCategoriesLabel;
 
+    public GameObject verticeMesh;
+
     public void CreateGraph(string sbomElement, string graphType, bool showDuplicateNodes)
     {
         Initialization();
@@ -73,6 +70,7 @@ public class GraphReader
         ColorDataBalls();
         CreateCategories();
         AddSbomLabel();
+        CVEOptimizations();
     }
 
     public void Initialization()
@@ -124,6 +122,10 @@ public class GraphReader
             MonoBehaviour.Destroy(numberCategoriesLabel);
         }
         
+        if(verticeMesh != null)
+        {
+            MonoBehaviour.Destroy(verticeMesh);
+        }
 
         dataObjects.Clear();
         level_occurrences.Clear();
@@ -135,7 +137,7 @@ public class GraphReader
 
     public void ReadFileAndCreateObjects(string sbomElement)
     {
-        Debug.Log(sbomElement.ToString());
+        //Debug.Log(sbomElement.ToString());
         dynamic jsonObj = JObject.Parse(sbomElement.ToString());
 
         var dict = JsonConvert.DeserializeObject<Dictionary<string, JToken>>(sbomElement.ToString());
@@ -157,7 +159,7 @@ public class GraphReader
         GameObject dataPoint = MonoBehaviour.Instantiate(BallPrefab, new Vector3(1, 1, 1), Quaternion.identity);
         TextMeshPro text = dataPoint.GetComponentInChildren<TextMeshPro>();
 
-        if(value != "")
+        if (value != "")
         {
             text.text = key + ":" + value;
         }
@@ -408,6 +410,8 @@ public class GraphReader
         DrawLinesBetweenDataBalls();
 
         MakeGraphBoundaries();
+
+        //MeshCombiner();
     }
 
     public void PositionAsRadialTidyTree()
@@ -917,6 +921,8 @@ public class GraphReader
 
         //Move Plane
         MovePlanePosition(position);
+
+        //verticeMesh.transform.position += position;
     }
 
     public void MoveBoundaryBox(GameObject box, Vector3 position)
@@ -943,7 +949,7 @@ public class GraphReader
 
     public void DrawLinesBetweenDataBalls()
     {
-
+        ld = new LineDrawer(0.04f);
         foreach (DataObject point in dataObjects)
         {
             point.relationship_line_parent.ForEach(line => {
@@ -956,7 +962,6 @@ public class GraphReader
 
                 foreach (DataObject p in point.parent)
                 {
-                    ld = new LineDrawer(0.04f);
                     List<Vector3> pointlist = new List<Vector3>();
                     pointlist.Add(point.DataBall.transform.position);
                     pointlist.Add(p.DataBall.transform.position);
@@ -991,7 +996,7 @@ public class GraphReader
             if (colors.ContainsKey(ball.key) || colors.ContainsKey(ball.key.Substring(0, ball.key.Length - ball.suffix.Length)))
             {
                 colors.TryGetValue(ball.key.Substring(0, ball.key.Length - ball.suffix.Length), out var color);
-                ball.DataBall.GetComponentInChildren<Renderer>().material.color = color;
+                ball.DataBall.GetComponentInChildren<Renderer>().sharedMaterial.color = color;
             } 
             else
             {
@@ -1281,7 +1286,7 @@ public class GraphReader
         sbomLabelText.alignment = TextAlignmentOptions.Center;
         sbomLabelText.color = new UnityEngine.Color(0.1f, 0.1f, 0.1f, 0.7f);
 
-        Debug.Log(" Object position:" + sbomLabel.transform.localPosition);
+        //Debug.Log(" Object position:" + sbomLabel.transform.localPosition);
 
         sbomLabel.transform.localPosition += new Vector3(0,0, -sbomLabelText.preferredWidth / 2 - 1);
 
@@ -1375,4 +1380,102 @@ public class GraphReader
         return relations + obj.parent.Count;
     }
 
+
+    public void CVEOptimizations()
+    {
+        if (isCVE)
+        {
+            numberCategoriesLabel.transform.rotation = Quaternion.Euler(0, -90, 0);
+            numberSbomLabel.transform.rotation = Quaternion.Euler(0, -90, 0);
+
+            
+            foreach(var ball in categoryBalls)
+            {
+                ball.transform.rotation = Quaternion.Euler(0, -90, 0);
+            }
+        }
+    }
+
+    public void MeshCombiner()
+    {
+        if (verticeMesh != null)
+        {
+            MonoBehaviour.Destroy(verticeMesh);
+        }
+
+        verticeMesh = new GameObject();
+        MeshFilter meshFilter = verticeMesh.AddComponent<MeshFilter>();
+        MeshRenderer meshRenderer = verticeMesh.AddComponent<MeshRenderer>();
+        Mesh combinedMesh = new Mesh();
+        List<LineRenderer> lineRenderers = new List<LineRenderer>();
+
+        foreach (var dobj in dataObjects)
+        {
+            foreach (var line in dobj.relationship_line_parent)
+            {
+
+                lineRenderers.Add(line.GetComponent<LineRenderer>());
+                line.GetComponent<LineRenderer>().enabled = false;
+            }
+        }
+
+        CombineInstance[] combineInstances = new CombineInstance[lineRenderers.Count];
+
+        for (int i = 0; i < lineRenderers.Count; i++)
+        {
+            LineRenderer lineRenderer = lineRenderers[i];
+            Mesh lineMesh = ConvertLineRendererToMeshWithColors(lineRenderer);
+            combineInstances[i].mesh = lineMesh;
+            combineInstances[i].transform = lineRenderer.transform.localToWorldMatrix;
+        }
+
+        combinedMesh.CombineMeshes(combineInstances, true, false);
+        meshFilter.mesh = combinedMesh;
+        meshRenderer.sharedMaterial = lineRenderers[0].sharedMaterial;
+    }
+
+    Mesh ConvertLineRendererToMeshWithColors(LineRenderer lineRenderer)
+    {
+        int pointCount = lineRenderer.positionCount;
+        Vector3[] positions = new Vector3[pointCount];
+        lineRenderer.GetPositions(positions);
+
+        Mesh mesh = new Mesh();
+        Vector3[] vertices = new Vector3[pointCount * 2];
+        UnityEngine.Color[] colors = new UnityEngine.Color[pointCount * 2];
+        int[] triangles = new int[(pointCount - 1) * 6];
+
+        for (int i = 0; i < pointCount; i++)
+        {
+            Vector3 direction = (i == pointCount - 1) ? positions[i] - positions[i - 1] : positions[i + 1] - positions[i];
+            Vector3 offset = Vector3.Cross(direction.normalized, Vector3.up) * lineRenderer.startWidth/2;
+
+            vertices[i * 2] = positions[i] - offset;
+            vertices[i * 2 + 1] = positions[i] + offset;
+
+            UnityEngine.Color color = lineRenderer.colorGradient.Evaluate(i / (float)(pointCount - 1));
+
+            colors[i * 2] = color;
+            colors[i * 2 + 1] = color;
+
+            if (i < pointCount - 1)
+            {
+                int startIndex = i * 6;
+                triangles[startIndex] = i * 2;
+                triangles[startIndex + 1] = i * 2 + 2;
+                triangles[startIndex + 2] = i * 2 + 1;
+
+                triangles[startIndex + 3] = i * 2 + 1;
+                triangles[startIndex + 4] = i * 2 + 2;
+                triangles[startIndex + 5] = i * 2 + 3;
+            }
+
+        }
+
+        mesh.vertices = vertices;
+        mesh.triangles = triangles;
+        mesh.colors = colors; 
+        mesh.RecalculateNormals();
+        return mesh;
+    }
 }

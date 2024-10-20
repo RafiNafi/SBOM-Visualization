@@ -23,29 +23,6 @@ public class VRInteractionDetection : MonoBehaviour
 
     void Update()
     {
-        //Only Balls clickable when Json menu not active to prevent to select by mistake
-        if(!jsonMenu.activeSelf)
-        {
-            if (IsTriggerPressed(controllerRight))
-            {
-                // Prevent multiple clicks
-                if (IsClickAllowed())
-                {
-                    Ray ray = new Ray(controllerRight.transform.position, controllerRight.transform.forward);
-                    RaycastHit hit;
-
-                    if (Physics.Raycast(ray, out hit))
-                    {
-                        if (hit.collider != null)
-                        {
-                            lastClickTime = Time.time;
-                            Debug.Log("Interacted: " + hit.collider.gameObject.name);
-                            menu.ShowNodePositionInMenu(hit.collider.gameObject);
-                        }
-                    }
-                }
-            }
-        }
 
         UnityEngine.EventSystems.RaycastResult hitNew;
         if (rayInteractor.TryGetCurrentUIRaycastResult(out hitNew))
@@ -70,6 +47,32 @@ public class VRInteractionDetection : MonoBehaviour
                             lastClickTime = Time.time;
                             Debug.Log("Selected link: " + linkInfo.GetLinkID());
                             menu.ExpandNodeInMenu(linkInfo.GetLinkID());
+                        }
+                    }
+                }
+            }
+        }
+
+        if (EventSystem.current.IsPointerOverGameObject()) return;
+
+        //Only Balls clickable when Json menu not active to prevent to select by mistake
+        if (!jsonMenu.activeSelf)
+        {
+            if (IsTriggerPressed(controllerRight))
+            {
+                // Prevent multiple clicks
+                if (IsClickAllowed())
+                {
+                    Ray ray = new Ray(controllerRight.transform.position, controllerRight.transform.forward);
+                    RaycastHit hit;
+
+                    if (Physics.Raycast(ray, out hit))
+                    {
+                        if (hit.collider != null)
+                        {
+                            lastClickTime = Time.time;
+                            Debug.Log("Interacted: " + hit.collider.gameObject.name);
+                            menu.ShowNodePositionInMenu(hit.collider.gameObject);
                         }
                     }
                 }

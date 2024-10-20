@@ -1,5 +1,5 @@
 # SBOM-Visualization
-A project for SBOM visualization as different graph types in VR.
+A project for SBOM visualization as different graph types in VR, that offers many different options to look at the data.
 
 ## Repository Folder Structure
 
@@ -24,4 +24,4 @@ For example "Assets" contains all scripts, prefabs etc. of the unity application
 ## Videos
 
 A demonstration video of the app functionality can be seen here: 
-https://drive.google.com/file/d/1KZe8YKtqmG8TAlchMz-ejpAw-cr195-6/view?usp=sharing
+https://drive.google.com/file/d/1LfEbCUAccXbY8_z5tCqOf2s2NZfKKy2K/view?usp=sharing

@@ -11,6 +11,7 @@ public class LineDrawer
     GameObject newLine;
     LineRenderer lineRenderer;
     float lineW = 0.04f;
+    Material materialLine = new Material(Shader.Find("Sprites/Default"));
 
     public LineDrawer(float lineW)
     {
@@ -21,8 +22,9 @@ public class LineDrawer
     {
         newLine = new GameObject();
         lineRenderer = newLine.AddComponent<LineRenderer>();
-        lineRenderer.material = new Material(Shader.Find("Sprites/Default"));
-
+        lineRenderer.sharedMaterial = materialLine;
+        lineRenderer.sharedMaterial.enableInstancing = true;
+        newLine.isStatic = true;
         lineRenderer.startWidth = lineW;
         lineRenderer.endWidth = lineW;
 
