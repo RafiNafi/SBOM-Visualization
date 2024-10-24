@@ -1524,6 +1524,8 @@ public class MenuInteraction : MonoBehaviour
     {
         MakeAllNodesInGraphInvisible(previousGraph);
 
+        foundPaths.Clear();
+
         List<DataObject> selectedTypeNodes = new List<DataObject>();
 
         foreach (DataObject other in previousGraph.dataObjects)
