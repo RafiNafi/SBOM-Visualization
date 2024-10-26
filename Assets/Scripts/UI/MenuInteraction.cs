@@ -1725,6 +1725,18 @@ public class MenuInteraction : MonoBehaviour
                 }
 
             }
+
+            if(enableLayerColors.isOn)
+            {
+                sbom.glowEnabled = true;
+                sbom.CreateGlowCubeLegend();
+            }
+            else
+            {
+                sbom.glowEnabled = false;
+                sbom.CreateGlowCubeLegend();
+            }
+            
         }
     }
 

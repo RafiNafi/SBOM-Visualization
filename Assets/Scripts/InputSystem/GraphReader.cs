@@ -17,6 +17,8 @@ using UnityEngine.InputSystem;
 using UnityEngine.UI;
 using UnityEngine.UIElements;
 using UnityEngine.XR.Interaction.Toolkit;
+using static Unity.Burst.Intrinsics.X86.Sse4_2;
+using static UnityEditor.Experimental.AssetDatabaseExperimental.AssetDatabaseCounters;
 
 
 public class GraphReader
@@ -46,6 +48,8 @@ public class GraphReader
     public bool isComparisonGraph = false;
     public int lineCounter = 0;
     public int allCategories = 0;
+    public string currentGraphType = "";
+    public bool glowEnabled = false;
 
     public List<GameObject> sbomLabels = new List<GameObject>();
     public GameObject categoryPlane;
@@ -53,6 +57,7 @@ public class GraphReader
     public GameObject numberCategoriesLabel;
 
     public GameObject verticeMesh;
+    public GameObject glowLegend;
 
     public void CreateGraph(string sbomElement, string graphType, bool showDuplicateNodes)
     {
@@ -125,6 +130,11 @@ public class GraphReader
         if(verticeMesh != null)
         {
             MonoBehaviour.Destroy(verticeMesh);
+        }
+
+        if (glowLegend != null)
+        {
+            MonoBehaviour.Destroy(glowLegend);
         }
 
         dataObjects.Clear();
@@ -384,6 +394,8 @@ public class GraphReader
 
     public void PositionDataBalls(string type)
     {
+        currentGraphType = type;
+
         switch (type)
         {
             case "Radial Tidy Tree":
@@ -410,6 +422,8 @@ public class GraphReader
         DrawLinesBetweenDataBalls();
 
         MakeGraphBoundaries();
+
+        CreateGlowCubeLegend();
 
         //MeshCombiner();
     }
@@ -553,7 +567,7 @@ public class GraphReader
                     float x = Mathf.Cos(angle) * radius;
                     float z = Mathf.Sin(angle) * radius;
 
-                    Vector3 position = new Vector3(x, 0 + incHeight + h*2, z);
+                    Vector3 position = new Vector3(x, 0 - (incHeight + h*2), z);
 
                     positionsV.Add(position);
                 }
@@ -907,22 +921,39 @@ public class GraphReader
         AdjustTextFontSize(sbomLabels[3], Mathf.Abs(BoundaryBox.GetComponent<Renderer>().bounds.max.x - BoundaryBox.GetComponent<Renderer>().bounds.min.x));
 
 
+        if (isCVE)
+        {
+            //Set Number sbom and category labels for CVE
+            AdjustNumberTextFontSize(numberSbomLabel, Math.Max(6, Math.Min(14, sbomLabels[0].GetComponent<TextMeshPro>().fontSize / 2)));
 
-        //Set Number sbom and category labels 
-        numberSbomLabel.transform.position = new Vector3(BoundaryBox.GetComponent<Renderer>().bounds.min.x + 0.5f,
-            BoundaryBox.GetComponent<Renderer>().bounds.max.y - 1.1f, BoundaryBox.GetComponent<Renderer>().bounds.max.z);
+            numberSbomLabel.transform.position = new Vector3(BoundaryBox.GetComponent<Renderer>().bounds.max.x - 0.5f,
+                BoundaryBox.GetComponent<Renderer>().bounds.max.y - 1.1f, BoundaryBox.GetComponent<Renderer>().bounds.min.z + numberSbomLabel.GetComponent<TextMeshPro>().preferredWidth);
 
-        AdjustNumberTextFontSize(numberSbomLabel, Math.Max(6, Math.Min(14, sbomLabels[0].GetComponent<TextMeshPro>().fontSize / 2)));
+            AdjustNumberTextFontSize(numberCategoriesLabel, Math.Max(6, Math.Min(14, sbomLabels[0].GetComponent<TextMeshPro>().fontSize / 2)));
 
-        numberCategoriesLabel.transform.position = new Vector3(BoundaryBoxCategories.GetComponent<Renderer>().bounds.min.x + 0.5f,
-            BoundaryBoxCategories.GetComponent<Renderer>().bounds.min.y + 1.1f, BoundaryBoxCategories.GetComponent<Renderer>().bounds.max.z);
+            numberCategoriesLabel.transform.position = new Vector3(BoundaryBoxCategories.GetComponent<Renderer>().bounds.max.x - 0.5f,
+                BoundaryBoxCategories.GetComponent<Renderer>().bounds.min.y + 1.1f, BoundaryBoxCategories.GetComponent<Renderer>().bounds.min.z + numberSbomLabel.GetComponent<TextMeshPro>().preferredWidth);
+        }
+        else
+        {
+            //Set Number sbom and category labels 
+            numberSbomLabel.transform.position = new Vector3(BoundaryBox.GetComponent<Renderer>().bounds.min.x + 0.5f,
+                BoundaryBox.GetComponent<Renderer>().bounds.max.y - 1.1f, BoundaryBox.GetComponent<Renderer>().bounds.max.z);
 
-        AdjustNumberTextFontSize(numberCategoriesLabel, Math.Max(6, Math.Min(14, sbomLabels[0].GetComponent<TextMeshPro>().fontSize / 2)));
+            AdjustNumberTextFontSize(numberSbomLabel, Math.Max(6, Math.Min(14, sbomLabels[0].GetComponent<TextMeshPro>().fontSize / 2)));
+
+            numberCategoriesLabel.transform.position = new Vector3(BoundaryBoxCategories.GetComponent<Renderer>().bounds.min.x + 0.5f,
+                BoundaryBoxCategories.GetComponent<Renderer>().bounds.min.y + 1.1f, BoundaryBoxCategories.GetComponent<Renderer>().bounds.max.z);
+
+            AdjustNumberTextFontSize(numberCategoriesLabel, Math.Max(6, Math.Min(14, sbomLabels[0].GetComponent<TextMeshPro>().fontSize / 2)));
+        }
 
         //Move Plane
         MovePlanePosition(position);
 
         //verticeMesh.transform.position += position;
+
+        CreateGlowCubeLegend();
     }
 
     public void MoveBoundaryBox(GameObject box, Vector3 position)
@@ -1207,6 +1238,17 @@ public class GraphReader
             nameText = dbid;
         }
 
+        if (isCVE)
+        {
+            foreach (DataObject point in dataObjects)
+            {
+                if(point.key == "CVE-ID")
+                {
+                    nameText = point.value;
+                }
+            }
+        }
+
         //Name labels
         sbomLabels.Add(
             CreateSbomlabel(new Vector3(
@@ -1238,16 +1280,32 @@ public class GraphReader
             Mathf.Abs(BoundaryBox.GetComponent<Renderer>().bounds.max.x - BoundaryBox.GetComponent<Renderer>().bounds.min.x), Quaternion.Euler(0, 0, 0), nameText));
 
         
-        //Number labels
-        numberSbomLabel = CreateNumberLabel(new Vector3(
-        BoundaryBox.GetComponent<Renderer>().bounds.min.x + 0.5f,
-        BoundaryBox.GetComponent<Renderer>().bounds.max.y - 1.1f,
-        BoundaryBox.GetComponent<Renderer>().bounds.max.z), Quaternion.Euler(0, 90, 0), "Nodes: " + dataObjects.Count);
+        if(isCVE)
+        {
+            //Number labels
+            numberSbomLabel = CreateNumberLabel(new Vector3(
+            BoundaryBox.GetComponent<Renderer>().bounds.max.x - 0.5f,
+            BoundaryBox.GetComponent<Renderer>().bounds.max.y - 1.1f,
+            BoundaryBox.GetComponent<Renderer>().bounds.min.z), Quaternion.Euler(0, 90, 0), "Nodes: " + dataObjects.Count);
 
-        numberCategoriesLabel = CreateNumberLabel(new Vector3(
-        BoundaryBoxCategories.GetComponent<Renderer>().bounds.min.x + 0.5f,
-        BoundaryBoxCategories.GetComponent<Renderer>().bounds.min.y + 1.1f,
-        BoundaryBoxCategories.GetComponent<Renderer>().bounds.max.z), Quaternion.Euler(0, 90, 0), "Nodes: " + allCategories);
+            numberCategoriesLabel = CreateNumberLabel(new Vector3(
+            BoundaryBoxCategories.GetComponent<Renderer>().bounds.max.x - 0.5f,
+            BoundaryBoxCategories.GetComponent<Renderer>().bounds.min.y + 1.1f,
+            BoundaryBoxCategories.GetComponent<Renderer>().bounds.min.z), Quaternion.Euler(0, 90, 0), "Nodes: " + allCategories);
+        }
+        else
+        {
+            //Number labels
+            numberSbomLabel = CreateNumberLabel(new Vector3(
+            BoundaryBox.GetComponent<Renderer>().bounds.min.x + 0.5f,
+            BoundaryBox.GetComponent<Renderer>().bounds.max.y - 1.1f,
+            BoundaryBox.GetComponent<Renderer>().bounds.max.z), Quaternion.Euler(0, 90, 0), "Nodes: " + dataObjects.Count);
+
+            numberCategoriesLabel = CreateNumberLabel(new Vector3(
+            BoundaryBoxCategories.GetComponent<Renderer>().bounds.min.x + 0.5f,
+            BoundaryBoxCategories.GetComponent<Renderer>().bounds.min.y + 1.1f,
+            BoundaryBoxCategories.GetComponent<Renderer>().bounds.max.z), Quaternion.Euler(0, 90, 0), "Nodes: " + allCategories);
+        }
     }
 
     public GameObject CreateSbomlabel(Vector3 position, float fontSizeValue, Quaternion rotation, string name)
@@ -1477,5 +1535,50 @@ public class GraphReader
         mesh.colors = colors; 
         mesh.RecalculateNormals();
         return mesh;
+    }
+
+    public void CreateGlowCubeLegend()
+    {
+        if (glowLegend != null)
+        {
+            MonoBehaviour.Destroy(glowLegend);
+        }
+
+        if (currentGraphType == "Stacking Radial Tree" || glowEnabled)
+        {
+
+            GameObject prefab = Resources.Load<GameObject>("Layer Glow Legend");
+            glowLegend = MonoBehaviour.Instantiate(prefab, Vector3.zero, Quaternion.identity);
+            glowLegend.SetActive(true);
+
+            List<GameObject> children = new List<GameObject>();
+            glowLegend.GetChildGameObjects(children);
+
+            int layers = level_occurrences.Count;
+            int counter = 0;
+
+            glowLegend.transform.position = new Vector3(BoundaryBox.GetComponent<Renderer>().bounds.min.x, BoundaryBox.GetComponent<Renderer>().bounds.max.y - 0.5f, BoundaryBox.GetComponent<Renderer>().bounds.max.z);
+
+            foreach (GameObject child in children)
+            {
+                if (counter < layers)
+                {
+                    child.SetActive(true);
+                    child.transform.localScale = new Vector3(0.3f,0.3f,0.3f);
+                    Renderer renderer = child.GetComponent<Renderer>();
+                    renderer.material.SetColor("_EmissionColor", dataObjects[0].layerColorPair[counter] * 3);
+                    child.transform.position += new Vector3(0, -counter, 0);
+                    TextMeshPro text = child.GetNamedChild("Text").GetComponent<TextMeshPro>();
+                    text.text = "Layer " + (counter + 1);
+                    text.fontSize = 16;
+                    counter++;
+                }
+                else
+                {
+                    child.SetActive(false);
+                }
+            }
+        }
+        
     }
 }
