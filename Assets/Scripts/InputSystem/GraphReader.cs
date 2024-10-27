@@ -240,7 +240,7 @@ public class GraphReader
                     DataObject new_parent = CreateDataObjectWithBall(parent.level + 1, kv.Key, "", parent);
                     dataObjects.Add(new_parent);
 
-                    //for invalid characters conbtained
+                    //for invalid characters contained
                     try
                     {
                         var dict2 = JsonConvert.DeserializeObject<Dictionary<string, JToken>>(Value);
@@ -273,7 +273,7 @@ public class GraphReader
                     {
                         Debug.Log(kv.Key + "-[REL]->" + arr_val);
 
-                        DataObject new_end_point = CreateDataObjectWithBall(parent.level + 1, arr_val.ToString(), "", parent);
+                        DataObject new_end_point = CreateDataObjectWithBall(new_parent.level + 1, arr_val.ToString(), "", new_parent);
                         dataObjects.Add(new_end_point);
                     }
                 } else
@@ -1564,10 +1564,10 @@ public class GraphReader
                 if (counter < layers)
                 {
                     child.SetActive(true);
-                    child.transform.localScale = new Vector3(0.3f,0.3f,0.3f);
+                    child.transform.localScale = new Vector3(0.35f,0.35f,0.35f);
                     Renderer renderer = child.GetComponent<Renderer>();
                     renderer.material.SetColor("_EmissionColor", dataObjects[0].layerColorPair[counter] * 3);
-                    child.transform.position += new Vector3(0, -counter, 0);
+                    child.transform.position += new Vector3(2, (-counter) - 0.5f, -2);
                     TextMeshPro text = child.GetNamedChild("Text").GetComponent<TextMeshPro>();
                     text.text = "Layer " + (counter + 1);
                     text.fontSize = 16;

@@ -32,7 +32,12 @@ public class MenuInteraction : MonoBehaviour
     public GameObject scrollViewContent;
     public GameObject scrollViewContentPositions;
     public GameObject scrollViewContentSearch;
+    public GameObject scrollViewCentextMenu;
     public GameObject buttonTemplate;
+    public GameObject tooltip;
+
+    public GameObject searchResultsPanel;
+    public GameObject contextMenuPanel;
 
     public UnityEngine.UI.Slider sliderLevel;
     public TextMeshProUGUI sliderText;
@@ -66,6 +71,7 @@ public class MenuInteraction : MonoBehaviour
 
     public Dictionary<string, string> textsPosition = new Dictionary<string, string>();
     public Dictionary<GameObject, DataObject> searchBtnDataPair = new Dictionary<GameObject, DataObject>();
+    public Dictionary<GameObject, DataObject> searchBtnDataPairDrilldown = new Dictionary<GameObject, DataObject>();
 
     public GameObject mainMenu;
     public GameObject sbomMenu;
@@ -1121,6 +1127,9 @@ public class MenuInteraction : MonoBehaviour
     public void CloseSearchWindow()
     {
         ClearContentChildren();
+
+        searchResultsPanel.SetActive(true);
+        contextMenuPanel.SetActive(false);
         searchResultsMenu.SetActive(false);
     }
 
@@ -1131,7 +1140,12 @@ public class MenuInteraction : MonoBehaviour
         {
             Destroy(child.gameObject);
         }
+        foreach (Transform child in scrollViewCentextMenu .GetComponent<RectTransform>())
+        {
+            Destroy(child.gameObject);
+        }
         searchBtnDataPair.Clear();
+        searchBtnDataPairDrilldown.Clear();
     }
 
     public void MakeAllNodesVisible()
@@ -1390,7 +1404,7 @@ public class MenuInteraction : MonoBehaviour
 
     }
 
-    public void AddNodeToScrollView(DataObject dobj)
+    public void AddNodeToScrollView(DataObject dobj, GraphReader graph)
     {
         GameObject btn = Instantiate(buttonTemplate, scrollViewContentSearch.transform);
 
@@ -1423,11 +1437,108 @@ public class MenuInteraction : MonoBehaviour
 
             player.transform.position = searchBtnDataPair[btn].DataBall.GetNamedChild("Ball").transform.position - 2 * textmesh.transform.forward;
             player.transform.LookAt(searchBtnDataPair[btn].DataBall.transform);
-            //Debug.Log(searchBtnDataPair[btn].DataBall.transform.eulerAngles.y);
+
             //player.transform.eulerAngles = new Vector3(player.transform.eulerAngles.x, searchBtnDataPair[btn].DataBall.transform.eulerAngles.y, player.transform.eulerAngles.z);
 
-
+            PrepareContextMenu(searchBtnDataPair[btn], graph);
         });
+    }
+
+    public void PrepareContextMenu(DataObject dobj, GraphReader sbom)
+    {
+        foreach (Transform child in scrollViewCentextMenu.GetComponent<RectTransform>())
+        {
+            Destroy(child.gameObject);
+        }
+
+        searchBtnDataPairDrilldown.Clear();
+
+        searchResultsPanel.SetActive(false);
+        contextMenuPanel.SetActive(true);
+
+        if (sbom.dataObjects.Count <= 0) return;
+
+        List<DataObject> path = FindShortestPath(dobj, sbom.dataObjects[0]);
+
+        foreach(var node in path)
+        {
+            GameObject btn = Instantiate(buttonTemplate, scrollViewCentextMenu.transform);
+
+            TextMeshProUGUI text = btn.GetComponentInChildren<TextMeshProUGUI>();
+
+            text.enableAutoSizing = true;
+            text.fontSizeMax = 7;
+            text.fontSizeMin = 4;
+
+            if (node.value != "")
+            {
+                text.text = "<color=#2E6F40>" + node.level + " - " + "</color>" + "<color=#D52929>" + node.key + " </color>: " + node.value;
+            }
+            else
+            {
+                text.text = "<color=#2E6F40>" + node.level + " - " + "</color>" + "<color=#D52929>" + node.key + " </color>";
+            }
+
+            text.fontSize = 7;
+            text.margin = new Vector4(5, 0, 5, 0);
+
+            searchBtnDataPairDrilldown.Add(btn, node);
+
+            btn.GetComponent<UnityEngine.UI.Button>().onClick.AddListener(() => {
+
+                List<GameObject> list = new List<GameObject>();
+                searchBtnDataPairDrilldown[btn].DataBall.GetNamedChild("Ball").GetChildGameObjects(list);
+
+                TextMeshPro textmesh = list[0].GetComponent<TextMeshPro>();
+
+                player.transform.position = searchBtnDataPairDrilldown[btn].DataBall.GetNamedChild("Ball").transform.position - 2 * textmesh.transform.forward;
+                player.transform.LookAt(searchBtnDataPairDrilldown[btn].DataBall.transform);
+            });
+
+            string name = node.key;
+
+            foreach(var point in sbom.dataObjects)
+            {
+                if(point.parent.Contains(node) && point.key == "name")
+                {
+                    name = point.key + ":" + point.value;
+                }
+            }
+
+            addButtonTooltip(btn.GetComponent<UnityEngine.UI.Button>(), name);
+        }
+    }
+
+    public void addButtonTooltip(UnityEngine.UI.Button button, string text)
+    {
+        EventTrigger trigger = button.AddComponent<EventTrigger>();
+
+        EventTrigger.Entry enterEvent = new EventTrigger.Entry
+        {
+            eventID = EventTriggerType.PointerEnter
+        };
+        enterEvent.callback.AddListener((data) => ShowTooltip(text, button.transform.position));
+        trigger.triggers.Add(enterEvent);
+
+        EventTrigger.Entry exitEvent = new EventTrigger.Entry
+        {
+            eventID = EventTriggerType.PointerExit
+        };
+        exitEvent.callback.AddListener((data) => HideTooltip());
+        trigger.triggers.Add(exitEvent);
+    }
+    void ShowTooltip(string message, Vector3 pos)
+    {
+        List<GameObject> children = new List<GameObject>();
+        tooltip.GetChildGameObjects(children);
+        children[1].GetComponent<TextMeshProUGUI>().text = message;
+        tooltip.SetActive(true);
+        tooltip.transform.position = new Vector3(tooltip.transform.position.x, pos.y, tooltip.transform.position.z);
+    }
+
+    void HideTooltip()
+    {
+        tooltip.SetActive(false);
     }
 
     public void ResetSearch(GraphReader graph)
@@ -1475,7 +1586,7 @@ public class MenuInteraction : MonoBehaviour
                     }
                     else
                     {
-                        AddNodeToScrollView(obj);
+                        AddNodeToScrollView(obj, graph);
                         ChangeNodeAndLinesTransparency(obj, 1f, 0.9f, 1f);
                     }
                 }
@@ -1508,7 +1619,7 @@ public class MenuInteraction : MonoBehaviour
             {
                 if (dobj.key.Contains(text) || dobj.value.Contains(text))
                 {
-                    AddNodeToScrollView(dobj);
+                    AddNodeToScrollView(dobj, previousGraph);
                     ChangeOnlyNodeTransparency(dobj, 1f, 1f);
                 }
             }
@@ -1619,7 +1730,7 @@ public class MenuInteraction : MonoBehaviour
                 ChangeOnlyNodeTransparency(parent, 1f, 1f);
 
                 foundPaths.Add((startNode, parent));
-                AddNodeToScrollView(startNode);
+                AddNodeToScrollView(startNode, previousGraph);
 
                 RecursiveSearchConnectionInTree(startNode, parent, selectedTypeNodes);
             }
@@ -1661,7 +1772,7 @@ public class MenuInteraction : MonoBehaviour
                             ChangeOnlyNodeTransparency(dobj, 1f, 1f);
                             ChangeOnlyLineTransparency(obj, dobj, 0.9f);
                             ChangeOnlyLineTransparency(dobj, obj, 0.9f);
-                            AddNodeToScrollView(obj);
+                            AddNodeToScrollView(obj, previousGraph);
                         }
                     }
                 }
@@ -1740,5 +1851,10 @@ public class MenuInteraction : MonoBehaviour
         }
     }
 
+    public void SwitchSearchMenus()
+    {
+        searchResultsPanel.SetActive(true);
+        contextMenuPanel.SetActive(false);
+    }
 
 }
