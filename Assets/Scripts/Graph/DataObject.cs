@@ -13,6 +13,7 @@ public class DataObject
     public List<DataObject> parent = new List<DataObject>();
     public List<GameObject> relationship_line_parent = new List<GameObject>();
     public int nr_children = 0;
+    public int nr_children_next_layer = 0;
     public bool isExpanded = true;
     public Vector3 velocity;
     public string suffix = "";
@@ -20,6 +21,8 @@ public class DataObject
     public List<DataObject> children = new List<DataObject>();
     public int nr_relationships = 0;
     public bool modifiedStatus = false;
+    public bool fusedNode = false;
+    //public List<(DataObject, DataObject)> fusedList = new List<(DataObject, DataObject)>();
 
     public DataObject(GameObject ball,int lvl,string key, string value, DataObject p, int lineNumber)
     {
@@ -35,10 +38,13 @@ public class DataObject
             this.parent.Add(p);
         }
 
-        List<GameObject> children = new List<GameObject>();
-        DataBall.GetNamedChild("Ball").GetChildGameObjects(children);
-        Renderer ballRenderer = children[3].GetComponent<Renderer>();
-        ballRenderer.material.SetColor("_EmissionColor", layerColorPair[level] * 3);
+        if (DataBall != null)
+        {
+            List<GameObject> children = new List<GameObject>();
+            DataBall.GetNamedChild("Ball").GetChildGameObjects(children);
+            Renderer ballRenderer = children[3].GetComponent<Renderer>();
+            ballRenderer.material.SetColor("_EmissionColor", layerColorPair[level] * 3);
+        }
     }
 
     public Dictionary<int, UnityEngine.Color> layerColorPair = new Dictionary<int, UnityEngine.Color>()

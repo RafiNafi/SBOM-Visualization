@@ -501,6 +501,7 @@ public class MenuInteraction : MonoBehaviour
         //Start Recursion With Root and make new combined Graph
         RecursiveCompare(Graph1.dataObjects[0], Graph2.dataObjects[0], newGraph.dataObjects[0], Graph1, Graph2, newGraph);
 
+        newGraph.CopyNodes();
         newGraph.CountCategoryNumbers();
         newGraph.CountRelationshipsAndDetermineMax();
         newGraph.PositionDataBalls(dropdown.options[dropdown.value].text);
@@ -1146,6 +1147,8 @@ public class MenuInteraction : MonoBehaviour
         }
         searchBtnDataPair.Clear();
         searchBtnDataPairDrilldown.Clear();
+        saveStateSearch.Clear();
+        saveStateSearchLines.Clear();
     }
 
     public void MakeAllNodesVisible()
@@ -1404,7 +1407,8 @@ public class MenuInteraction : MonoBehaviour
 
     }
 
-    public void AddNodeToScrollView(DataObject dobj, GraphReader graph)
+
+    public void AddNodeToScrollViewDuplicate(DataObject dobj, GraphReader graph)
     {
         GameObject btn = Instantiate(buttonTemplate, scrollViewContentSearch.transform);
 
@@ -1414,7 +1418,7 @@ public class MenuInteraction : MonoBehaviour
         text.fontSizeMax = 7;
         text.fontSizeMin = 4;
 
-        if(dobj.value != "")
+        if (dobj.value != "")
         {
             text.text = "<color=#D52929>" + dobj.key + " </color>: " + dobj.value;
         }
@@ -1440,12 +1444,13 @@ public class MenuInteraction : MonoBehaviour
 
             //player.transform.eulerAngles = new Vector3(player.transform.eulerAngles.x, searchBtnDataPair[btn].DataBall.transform.eulerAngles.y, player.transform.eulerAngles.z);
 
-            PrepareContextMenu(searchBtnDataPair[btn], graph);
+            PrepareContextMenuDuplicate(searchBtnDataPair[btn], graph);
         });
     }
 
-    public void PrepareContextMenu(DataObject dobj, GraphReader sbom)
+    public void PrepareContextMenuDuplicate(DataObject dobj, GraphReader sbom)
     {
+
         foreach (Transform child in scrollViewCentextMenu.GetComponent<RectTransform>())
         {
             Destroy(child.gameObject);
@@ -1458,10 +1463,58 @@ public class MenuInteraction : MonoBehaviour
 
         if (sbom.dataObjects.Count <= 0) return;
 
-        List<DataObject> path = FindShortestPath(dobj, sbom.dataObjects[0]);
+        
+        DataObject startNode = dobj;
+        DataObject endNode = sbom.dataObjects[0];
 
-        foreach(var node in path)
+        foreach (var data in sbom.dataObjectsPreFuse)
         {
+            if(data.Item2 == dobj)
+            {
+                startNode = data.Item1;
+            }
+            else if(data.Item2 == sbom.dataObjects[0])
+            {
+                endNode = data.Item1;
+            }
+        }
+
+        List<DataObject> path = FindShortestPath(startNode, endNode);
+        
+        List<DataObject> pathNew = new List<DataObject>();
+
+        foreach (DataObject node in path)
+        {
+
+            foreach (var data in sbom.dataObjectsPreFuse)
+            {
+                if (data.Item1 == node)
+                {
+                    if (!sbom.dataObjects.Contains(data.Item2))
+                    {
+                        foreach (DataObject d in sbom.dataObjects)
+                        {
+                            if (d.key == data.Item1.key && d.value == data.Item1.value)
+                            {
+                                pathNew.Add(d);
+                            }
+                        }
+                    }
+                    else
+                    {
+                        pathNew.Add(data.Item2);
+                    }
+                }
+            }
+        }
+
+        path = pathNew;
+
+        int countNode = path.Count;
+
+        foreach (DataObject node in path)
+        {
+
             GameObject btn = Instantiate(buttonTemplate, scrollViewCentextMenu.transform);
 
             TextMeshProUGUI text = btn.GetComponentInChildren<TextMeshProUGUI>();
@@ -1472,12 +1525,166 @@ public class MenuInteraction : MonoBehaviour
 
             if (node.value != "")
             {
-                text.text = "<color=#2E6F40>" + node.level + " - " + "</color>" + "<color=#D52929>" + node.key + " </color>: " + node.value;
+                text.text = "<color=#2E6F40>" + countNode + " - " + "</color>" + "<color=#D52929>" + node.key + " </color>: " + node.value;
             }
             else
             {
-                text.text = "<color=#2E6F40>" + node.level + " - " + "</color>" + "<color=#D52929>" + node.key + " </color>";
+                text.text = "<color=#2E6F40>" + countNode + " - " + "</color>" + "<color=#D52929>" + node.key + " </color>";
             }
+
+            countNode--;
+
+            text.fontSize = 7;
+            text.margin = new Vector4(5, 0, 5, 0);
+
+            searchBtnDataPairDrilldown.Add(btn, node);
+
+            btn.GetComponent<UnityEngine.UI.Button>().onClick.AddListener(() => {
+
+                List<GameObject> list = new List<GameObject>();
+                searchBtnDataPairDrilldown[btn].DataBall.GetNamedChild("Ball").GetChildGameObjects(list);
+
+                TextMeshPro textmesh = list[0].GetComponent<TextMeshPro>();
+
+                player.transform.position = searchBtnDataPairDrilldown[btn].DataBall.GetNamedChild("Ball").transform.position - 2 * textmesh.transform.forward;
+                player.transform.LookAt(searchBtnDataPairDrilldown[btn].DataBall.transform);
+            });
+
+            string name = node.key;
+
+            foreach (var point in sbom.dataObjects)
+            {
+                if (point.parent.Contains(node) && point.key == "name" && !node.fusedNode)
+                {
+                    name = point.key + ":" + point.value;
+                }
+            }
+
+            addButtonTooltip(btn.GetComponent<UnityEngine.UI.Button>(), name);
+        }
+    }
+
+    public void AddNodeToScrollView(DataObject dobj, GraphReader graph, List<List<DataObject>> allOptions)
+    {
+        foreach(var copyPath in allOptions)
+        {
+            GameObject btn = Instantiate(buttonTemplate, scrollViewContentSearch.transform);
+
+            TextMeshProUGUI text = btn.GetComponentInChildren<TextMeshProUGUI>();
+
+            text.enableAutoSizing = true;
+            text.fontSizeMax = 7;
+            text.fontSizeMin = 4;
+
+            if (dobj.value != "")
+            {
+                text.text = "<color=#D52929>" + dobj.key + " </color>: " + dobj.value;
+            }
+            else
+            {
+                text.text = "<color=#D52929>" + dobj.key + " </color>";
+            }
+
+            text.fontSize = 7;
+            text.margin = new Vector4(5, 0, 5, 0);
+
+            searchBtnDataPair.Add(btn, dobj);
+
+            btn.GetComponent<UnityEngine.UI.Button>().onClick.AddListener(() => {
+
+                List<GameObject> list = new List<GameObject>();
+                searchBtnDataPair[btn].DataBall.GetNamedChild("Ball").GetChildGameObjects(list);
+
+                TextMeshPro textmesh = list[0].GetComponent<TextMeshPro>();
+
+                player.transform.position = searchBtnDataPair[btn].DataBall.GetNamedChild("Ball").transform.position - 2 * textmesh.transform.forward;
+                player.transform.LookAt(searchBtnDataPair[btn].DataBall.transform);
+
+                //player.transform.eulerAngles = new Vector3(player.transform.eulerAngles.x, searchBtnDataPair[btn].DataBall.transform.eulerAngles.y, player.transform.eulerAngles.z);
+
+                PrepareContextMenu(searchBtnDataPair[btn], graph, copyPath);
+            });
+        }
+    }
+
+    public void PrepareContextMenu(DataObject dobj, GraphReader sbom, List<DataObject> path)
+    {
+
+        foreach (Transform child in scrollViewCentextMenu.GetComponent<RectTransform>())
+        {
+            Destroy(child.gameObject);
+        }
+
+        searchBtnDataPairDrilldown.Clear();
+
+        searchResultsPanel.SetActive(false);
+        contextMenuPanel.SetActive(true);
+
+        if (sbom.dataObjects.Count <= 0) return;
+
+        List<DataObject> pathNew = new List<DataObject>();
+
+        foreach (DataObject node in path)
+        {
+
+            foreach (var data in sbom.dataObjectsPreFuse)
+            {
+                if(data.Item1 == node)
+                {
+                    if (!sbom.dataObjects.Contains(data.Item2))
+                    {
+                        foreach (DataObject d in sbom.dataObjects)
+                        {
+                            if(d.key == data.Item1.key && d.value == data.Item1.value)
+                            {
+                                pathNew.Add(d);
+                            }
+                        }
+                    }
+                    else
+                    {
+                        pathNew.Add(data.Item2);
+                    }
+                }
+            }
+        }
+
+        path = pathNew;
+
+        int countNode = path.Count;
+        int counterShowLines = 0;
+
+        MakeAllNodesInGraphInvisible(sbom);
+
+        foreach (DataObject node in path)
+        {
+            ChangeOnlyNodeTransparency(node, 1f, 1f);
+
+            if(counterShowLines + 1 < path.Count)
+            {
+                ChangeOnlyLineTransparency(path[counterShowLines], path[counterShowLines + 1], 0.9f);
+                counterShowLines++;
+            }
+
+
+            GameObject btn = Instantiate(buttonTemplate, scrollViewCentextMenu.transform);
+
+            TextMeshProUGUI text = btn.GetComponentInChildren<TextMeshProUGUI>();
+
+            text.enableAutoSizing = true;
+            text.fontSizeMax = 7;
+            text.fontSizeMin = 4;
+
+            if (node.value != "")
+            {
+                text.text = "<color=#2E6F40>" + countNode + " - " + "</color>" + "<color=#D52929>" + node.key + " </color>: " + node.value;
+            }
+            else
+            {
+                text.text = "<color=#2E6F40>" + countNode + " - " + "</color>" + "<color=#D52929>" + node.key + " </color>";
+            }
+
+            countNode--;
 
             text.fontSize = 7;
             text.margin = new Vector4(5, 0, 5, 0);
@@ -1499,7 +1706,7 @@ public class MenuInteraction : MonoBehaviour
 
             foreach(var point in sbom.dataObjects)
             {
-                if(point.parent.Contains(node) && point.key == "name")
+                if(point.parent.Contains(node) && point.key == "name" && !node.fusedNode)
                 {
                     name = point.key + ":" + point.value;
                 }
@@ -1508,6 +1715,7 @@ public class MenuInteraction : MonoBehaviour
             addButtonTooltip(btn.GetComponent<UnityEngine.UI.Button>(), name);
         }
     }
+
 
     public void addButtonTooltip(UnityEngine.UI.Button button, string text)
     {
@@ -1572,6 +1780,38 @@ public class MenuInteraction : MonoBehaviour
         CloseSearchWindow();
     }
 
+    public List<List<DataObject>> GetAllPaths(DataObject obj, GraphReader graph)
+    {
+
+        List<List<DataObject>> allOptions = new List<List<DataObject>>();
+
+        foreach (var d in graph.dataObjectsPreFuse)
+        {
+            if (obj.key == d.Item1.key && obj.value == d.Item1.value)
+            {
+                allOptions.Add(FindShortestPath(d.Item1, graph.dataObjectsPreFuse[0].Item1));
+            }
+        }
+
+        return allOptions;
+    }
+
+    public void PrepareSearchResults(DataObject obj, GraphReader graph)
+    {
+        if (showDuplicateNodesToggle.isOn)
+        {
+            AddNodeToScrollViewDuplicate(obj, graph);
+        }
+        else
+        {
+            List<List<DataObject>> allOptions = GetAllPaths(obj, graph);
+            AddNodeToScrollView(obj, graph, allOptions);
+        }
+    }
+
+    List<DataObject> saveStateSearch = new List<DataObject>();
+    List<(DataObject, DataObject)> saveStateSearchLines = new List<(DataObject, DataObject)>();
+
     public void StandardSearch(string text)
     {
         foreach (GraphReader graph in sbomList)
@@ -1586,8 +1826,10 @@ public class MenuInteraction : MonoBehaviour
                     }
                     else
                     {
-                        AddNodeToScrollView(obj, graph);
+                        PrepareSearchResults(obj, graph);
+
                         ChangeNodeAndLinesTransparency(obj, 1f, 0.9f, 1f);
+                        saveStateSearch.Add(obj);
                     }
                 }
             }
@@ -1619,8 +1861,9 @@ public class MenuInteraction : MonoBehaviour
             {
                 if (dobj.key.Contains(text) || dobj.value.Contains(text))
                 {
-                    AddNodeToScrollView(dobj, previousGraph);
+                    PrepareSearchResults(dobj, previousGraph);
                     ChangeOnlyNodeTransparency(dobj, 1f, 1f);
+                    saveStateSearch.Add(dobj);
                 }
             }
         }
@@ -1667,12 +1910,13 @@ public class MenuInteraction : MonoBehaviour
 
             foreach(var path in shortestPath)
             {
-                for (int i = 0; i < shortestPath.Count; i++)
+                for (int i = 0; i < path.Count; i++)
                 {
                     if (i + 1 < path.Count)
                     {
                         ChangeOnlyLineTransparency(path[i], path[i + 1], 0.9f);
                         ChangeOnlyLineTransparency(path[i + 1], path[i], 0.9f);
+                        saveStateSearchLines.Add((path[i], path[i + 1]));
                     }
 
                 }
@@ -1729,8 +1973,14 @@ public class MenuInteraction : MonoBehaviour
                 ChangeOnlyNodeTransparency(startNode, 1f, 1f);
                 ChangeOnlyNodeTransparency(parent, 1f, 1f);
 
-                foundPaths.Add((startNode, parent));
-                AddNodeToScrollView(startNode, previousGraph);
+                if (!foundPaths.Contains((startNode, parent)))
+                {
+                    saveStateSearch.Add(startNode);
+                    saveStateSearch.Add(parent);
+
+                    foundPaths.Add((startNode, parent));
+                    PrepareSearchResults(startNode, previousGraph);
+                }
 
                 RecursiveSearchConnectionInTree(startNode, parent, selectedTypeNodes);
             }
@@ -1772,7 +2022,12 @@ public class MenuInteraction : MonoBehaviour
                             ChangeOnlyNodeTransparency(dobj, 1f, 1f);
                             ChangeOnlyLineTransparency(obj, dobj, 0.9f);
                             ChangeOnlyLineTransparency(dobj, obj, 0.9f);
-                            AddNodeToScrollView(obj, previousGraph);
+
+                            saveStateSearch.Add(obj);
+                            saveStateSearch.Add(dobj);
+                            saveStateSearchLines.Add((obj, dobj));
+
+                            PrepareSearchResults(obj, previousGraph);
                         }
                     }
                 }
@@ -1855,6 +2110,41 @@ public class MenuInteraction : MonoBehaviour
     {
         searchResultsPanel.SetActive(true);
         contextMenuPanel.SetActive(false);
+
+        if(saveStateSearch.Count > 0 || saveStateSearchLines.Count > 0)
+        {
+            //GO BACK TO PREVIOUS NODES
+            if(previousGraph == null)
+            {
+                foreach(var sbom in sbomList)
+                {
+                    MakeAllNodesInGraphInvisible(sbom);
+                }
+            }
+            else
+            {
+                MakeAllNodesInGraphInvisible(previousGraph);
+            }
+
+
+            foreach (var node in saveStateSearch)
+            {
+                if (previousGraph == null)
+                {
+                    ChangeNodeAndLinesTransparency(node, 1f, 0.9f, 1f);
+                }
+                else
+                {
+                    ChangeOnlyNodeTransparency(node, 1f, 1f);
+                }
+            }
+
+            foreach (var line in saveStateSearchLines)
+            {
+                ChangeOnlyLineTransparency(line.Item1, line.Item2, 0.9f);
+            }
+        }
+
     }
 
 }

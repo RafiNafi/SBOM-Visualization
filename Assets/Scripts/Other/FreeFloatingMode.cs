@@ -7,9 +7,9 @@ public class FreeFloatingMode : MonoBehaviour
 {
 
     //public float movementSpeed = 2.0f;  
-    public float verticalSpeed = 15f;
+    public float verticalSpeed = 20f;
     public float rampup = 0f;
-    public float rampupSpeed = 80f;
+    public float rampupSpeed = 100f;
 
     public Transform playerTransform;
 
@@ -38,7 +38,7 @@ public class FreeFloatingMode : MonoBehaviour
         {
             if (rampup < rampupSpeed)
             {
-                rampup += 0.02f;
+                rampup += 0.03f;
             }
         }
 

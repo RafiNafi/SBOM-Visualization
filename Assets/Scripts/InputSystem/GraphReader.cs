@@ -14,11 +14,11 @@ using Unity.VisualScripting;
 using Unity.XR.CoreUtils;
 using UnityEngine;
 using UnityEngine.InputSystem;
+using UnityEngine.InputSystem.HID;
 using UnityEngine.UI;
 using UnityEngine.UIElements;
 using UnityEngine.XR.Interaction.Toolkit;
-using static Unity.Burst.Intrinsics.X86.Sse4_2;
-using static UnityEditor.Experimental.AssetDatabaseExperimental.AssetDatabaseCounters;
+
 
 
 public class GraphReader
@@ -32,6 +32,7 @@ public class GraphReader
     public int highest_relationship_count = 0;
 
     public List<DataObject> dataObjects = new List<DataObject>();
+    public List<(DataObject, DataObject)> dataObjectsPreFuse = new List<(DataObject, DataObject)>();
     public Dictionary<int, int> level_occurrences = new Dictionary<int, int>();
     public LineDrawer ld;
     public static Dictionary<string, UnityEngine.Color> colors = new Dictionary<string, UnityEngine.Color>();
@@ -64,6 +65,7 @@ public class GraphReader
         Initialization();
         ReadFileAndCreateObjects(sbomElement);
         CountCategoryNumbers();
+        CopyNodes();
 
         if(!showDuplicateNodes)
         {
@@ -339,9 +341,10 @@ public class GraphReader
             if (item.Value.Count > 1) 
             {
                 DataObject fusedNode = item.Value[0];
+                fusedNode.fusedNode = true;
                 item.Value.RemoveAt(0);
 
-                foreach(DataObject obj in item.Value)
+                foreach (DataObject obj in item.Value)
                 {
                     //Check children of node
                     foreach(DataObject child in dataObjects)
@@ -352,6 +355,7 @@ public class GraphReader
                             {
                                 child.parent.Add(fusedNode);
                             }
+
                             child.parent.Remove(obj);
                         }
                     }
@@ -523,7 +527,7 @@ public class GraphReader
         float ballDiameter = 1f;
         float previousRadius = ballDiameter / 2f;
         int incHeight = 0;
-        float maximumBallsPerLevel = 60;
+        float maximumBallsPerLevel = 70;
 
         foreach (int key in level_occurrences.Keys)
         {
@@ -574,8 +578,6 @@ public class GraphReader
             }
 
             int numberPositions = positionsV.Count;
-            //int NodesWithoutChild = 0;
-            //List<DataObject> nodesChecked = new List<DataObject>();
 
             //Count Parents with Children
             for (int i = 0; i < dataObjects.Count; i++)
@@ -588,6 +590,7 @@ public class GraphReader
                         break;
                     }
 
+
                     if (parentChildrenPairs.ContainsKey(dataObjects[i].parent[0]))
                     {
                         parentChildrenPairs[dataObjects[i].parent[0]].Add(dataObjects[i]);
@@ -597,42 +600,20 @@ public class GraphReader
                         parentChildrenPairs.Add(dataObjects[i].parent[0], new List<DataObject> { dataObjects[i] });
                     }
 
-                    /*
-                    if (dataObjects[i].nr_children == 0)
-                    {
-                        NodesWithoutChild++;
-                        nodesChecked.Add(dataObjects[i]);
-                    }
-                    */
-
                 }
             }
-
-            /*
-            for (int i = 0; i < dataObjects.Count; i++)
-            {
-                if (key == dataObjects[i].level && !nodesChecked.Contains(dataObjects[i]))
-                {
-                    float ballsFraction = (float)dataObjects[i].nr_children / ((float)(numberOfChildrenBalls));
-                    int numberClaimedPositions = (int)(ballsFraction * (numberPositions - NodesWithoutChild));
-                        
-                    if(numberClaimedPositions == 0)
-                    {
-                        NodesWithoutChild++;
-                    }
-                }
-            }
-            */
 
             var sortedparentChildrenDict = parentChildrenPairs.OrderByDescending(kvp => kvp.Value.Count).ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
-
+            //Debug.Log("LEVEL: " + key);
+            //Debug.Log("COUNT sortedparentChildrenDict: " + sortedparentChildrenDict.Count);
             foreach (var keyValuePair in sortedparentChildrenDict) 
             {
-                var parentChildsPair = keyValuePair.Value.OrderByDescending(kvp => kvp.nr_children).ToList();
 
+                var parentChildsPair = keyValuePair.Value.OrderByDescending(kvp => kvp.nr_children_next_layer).ToList();
+
+                //Debug.Log("COUNT parentChildsPair: " + parentChildsPair.Count);
                 foreach (DataObject dobj in parentChildsPair)
                 {
-                    
                     Vector3 closestPosition = Vector3.zero;
                     float shortestDistance = Mathf.Infinity;
 
@@ -674,34 +655,23 @@ public class GraphReader
 
                     dobj.DataBall.transform.position = closestPosition;
 
-
-
-                    //TODO: Fix missing positions (maybe numberClaimedPositions too high)
-                    float ballsFraction = (float)dobj.nr_children / ((float)(numberOfChildrenBalls));
+                    float ballsFraction = (float)dobj.nr_children_next_layer / numberOfChildrenBalls;
                     int numberClaimedPositions = (int)(ballsFraction * (numberPositions - numberOfBalls));
 
                     if (numberClaimedPositions == 0)
                     {
                         numberClaimedPositions = 1;
                     }
-                    /*
-                    Debug.Log(dobj.key);
-                    Debug.Log("POSITIONS:" + numberPositions);
-                    Debug.Log("LAYER:" + key);
-                    Debug.Log("Fraction: " + ballsFraction);
-                    Debug.Log("numberPositions - NodesWithoutChild: " + (numberPositions - NodesWithoutChild));
-                    Debug.Log("numberClaimedPositions: " + numberClaimedPositions);
-                    Debug.Log("numberPositions: " + numberPositions);
-                    */
 
                     positionsV = positionsV.OrderBy(pos => Vector3.Distance(pos, closestPosition)).ToList();
+
 
                     positionsV.RemoveRange(0, Math.Min(numberClaimedPositions, positionsV.Count));
                 }
 
             }
 
-            incHeight += 2;
+            incHeight += 3;
             previousRadius = radius + ballDiameter;
         }
     }
@@ -933,6 +903,11 @@ public class GraphReader
 
             numberCategoriesLabel.transform.position = new Vector3(BoundaryBoxCategories.GetComponent<Renderer>().bounds.max.x - 0.5f,
                 BoundaryBoxCategories.GetComponent<Renderer>().bounds.min.y + 1.1f, BoundaryBoxCategories.GetComponent<Renderer>().bounds.min.z + numberSbomLabel.GetComponent<TextMeshPro>().preferredWidth);
+
+            foreach (var label in sbomLabels)
+            {
+                label.transform.position += new Vector3(0, -0.75f, 0);
+            }
         }
         else
         {
@@ -1406,6 +1381,7 @@ public class GraphReader
         foreach(DataObject obj in dataObjects)
         {
             obj.nr_relationships = NumberRelationshipsOfNode(obj);
+            NumberRelationshipsOfNodeNextLayer(obj);
             highest_relationship_count = Mathf.Max(highest_relationship_count, obj.nr_relationships);
         }
     }
@@ -1438,6 +1414,22 @@ public class GraphReader
         return relations + obj.parent.Count;
     }
 
+    public void NumberRelationshipsOfNodeNextLayer(DataObject obj)
+    {
+        int relations = 0;
+        foreach (DataObject node in dataObjects)
+        {
+            if (node.parent.Contains(obj))
+            {
+                if(node.level == (obj.level + 1))
+                {
+                    relations++;
+                }
+            }
+        }
+
+        obj.nr_children_next_layer = relations;
+    }
 
     public void CVEOptimizations()
     {
@@ -1581,4 +1573,32 @@ public class GraphReader
         }
         
     }
+
+    public void CopyNodes()
+    {
+
+        DataObject dobj = CopyTree(dataObjects[0], dataObjectsPreFuse);
+    }
+
+    public DataObject CopyTree(DataObject originalNode, List<(DataObject, DataObject)> allNodes)
+    {
+        if (originalNode == null)
+        {
+            return null;
+        }
+
+        DataObject newNode = new DataObject(null, originalNode.level, originalNode.key, originalNode.value, null, originalNode.lineNumber);
+        allNodes.Add((newNode, originalNode)); //Item1 = Neue Kopie & Item2 = Fusionierte Knoten
+
+        foreach (DataObject child in originalNode.children)
+        {
+            DataObject copiedChild = CopyTree(child, allNodes);
+            copiedChild.parent.Add(newNode);
+            newNode.children.Add(copiedChild);
+        }
+
+        return newNode;
+    }
+
+
 }
